@@ -2,6 +2,8 @@ import express from "express";
 import dotenv from "dotenv";
 import { errorHandler } from "./middlewares";
 import authRoutes from "./modules/auth/routes";
+import userRoutes from "./modules/user/routes";
+import sellerRoutes from "./modules/seller/routes";
 
 dotenv.config();
 
@@ -24,6 +26,7 @@ export class Server {
 
   private setUpRoutes() {
     this.apiRouter.use("/auth", authRoutes);
+    this.apiRouter.use("/users", userRoutes);
     this.app.use("/api/v1", this.apiRouter);
     this.app.use(errorHandler);
   }

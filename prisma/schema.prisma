@@ -14,16 +14,17 @@ datasource db {
 }
 
 model User {
-  user_id    String   @id @default(uuid())
-  email      String   @unique
-  password   String
-  first_name String
-  last_name  String
-  role       Role
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
+   id              String   @id @default(uuid())
+  email           String   @unique
+  password        String
+  firstName       String
+  lastName        String
+  shippingAddress String?
+  role            Role     @default(CUSTOMER)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
-  sellers  Seller?
+  seller   Seller?
   orders   Order[]
   wishlist Wishlist[]
   chats    Chat[]
@@ -38,15 +39,15 @@ enum Role {
 }
 
 model Seller {
-  seller_id      String        @id @default(uuid())
-  user_id        String        @unique
-  catalogue_name String
-  payment_method PaymentMethod
-  created_at     DateTime      @default(now())
-  updated_at     DateTime      @updatedAt
+  id            String        @id @default(uuid())
+  userId        String        @unique
+  catalogueName String
+  paymentMethod PaymentMethod
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
 
-  user     User      @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
-  wallets  Wallet?
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  wallet   Wallet?
   products Product[]
   orders   Order[]
   chats    Chat[]
@@ -59,57 +60,57 @@ enum PaymentMethod {
 }
 
 model Wallet {
-  wallet_id    String   @id @default(uuid())
-  seller_id    String   @unique
-  balance      Decimal  @default(0.00)
-  total_earned Decimal  @default(0.00)
-  created_at   DateTime @default(now())
-  updated_at   DateTime @updatedAt
+  id          String   @id @default(uuid())
+  sellerId    String   @unique
+  balance     Decimal  @default(0.00)
+  totalEarned Decimal  @default(0.00)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  seller       Seller        @relation(fields: [seller_id], references: [seller_id], onDelete: Cascade)
+  seller       Seller        @relation(fields: [sellerId], references: [id], onDelete: Cascade)
   transactions Transaction[]
 }
 
 model Product {
-  product_id     String   @id @default(uuid())
-  seller_id      String
-  name           String
-  description    String
-  price          Decimal
-  stock_quantity Int
-  category_id    String
-  created_at     DateTime @default(now())
-  updated_at     DateTime @updatedAt
+  id            String   @id @default(uuid())
+  sellerId      String
+  name          String
+  description   String
+  price         Decimal
+  stockQuantity Int
+  categoryId    String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  seller      Seller      @relation(fields: [seller_id], references: [seller_id], onDelete: Cascade)
-  category    Category    @relation(fields: [category_id], references: [category_id], onDelete: Cascade)
-  order_items OrderItem[]
-  wishlist    Wishlist[]
+  seller     Seller      @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  category   Category    @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  orderItems OrderItem[]
+  wishlist   Wishlist[]
 }
 
 model Category {
-  category_id String   @id @default(uuid())
-  name        String
-  created_at  DateTime @default(now())
-  updated_at  DateTime @updatedAt
+  id        String   @id @default(uuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   products Product[]
 }
 
 model Order {
-  order_id       String        @id @default(uuid())
-  user_id        String
-  seller_id      String
-  total_price    Decimal
-  order_status   OrderStatus
-  payment_method PaymentMethod
-  escrow_status  EscrowStatus  @default(HELD)
-  created_at     DateTime      @default(now())
-  updated_at     DateTime      @updatedAt
+  id            String        @id @default(uuid())
+  userId        String
+  sellerId      String
+  totalPrice    Decimal
+  orderStatus   OrderStatus
+  paymentMethod PaymentMethod
+  escrowStatus  EscrowStatus  @default(HELD)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
 
-  user         User          @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
-  seller       Seller        @relation(fields: [seller_id], references: [seller_id], onDelete: Cascade)
-  order_items  OrderItem[]
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  seller       Seller        @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  orderItems   OrderItem[]
   chats        Chat[]
   transactions Transaction[]
 }
@@ -128,39 +129,39 @@ enum EscrowStatus {
 }
 
 model OrderItem {
-  order_item_id String  @id @default(uuid())
-  order_id      String
-  product_id    String
-  quantity      Int
-  price         Decimal
+  id        String  @id @default(uuid())
+  orderId   String
+  productId String
+  quantity  Int
+  price     Decimal
 
-  order   Order   @relation(fields: [order_id], references: [order_id], onDelete: Cascade)
-  product Product @relation(fields: [product_id], references: [product_id], onDelete: Cascade)
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 }
 
 model Wishlist {
-  wishlist_id String   @id @default(uuid())
-  user_id     String
-  product_id  String
-  created_at  DateTime @default(now())
+  id        String   @id @default(uuid())
+  userId    String
+  productId String
+  createdAt DateTime @default(now())
 
-  user    User    @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
-  product Product @relation(fields: [product_id], references: [product_id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 }
 
 model Chat {
-  chat_id       String       @id @default(uuid())
-  buyer_id      String
-  seller_id     String
-  order_id      String?
-  chat_platform ChatPlatform
-  status        ChatStatus   @default(OPEN)
-  created_at    DateTime     @default(now())
-  updated_at    DateTime     @updatedAt
+  id           String       @id @default(uuid())
+  buyerId      String
+  sellerId     String
+  orderId      String?
+  chatPlatform ChatPlatform
+  status       ChatStatus   @default(OPEN)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
 
-  buyer    User      @relation(fields: [buyer_id], references: [user_id], onDelete: Cascade)
-  seller   Seller    @relation(fields: [seller_id], references: [seller_id], onDelete: Cascade)
-  order    Order?    @relation(fields: [order_id], references: [order_id], onDelete: Cascade)
+  buyer    User      @relation(fields: [buyerId], references: [id], onDelete: Cascade)
+  seller   Seller    @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  order    Order?    @relation(fields: [orderId], references: [id], onDelete: Cascade)
   messages Message[]
 }
 
@@ -176,28 +177,28 @@ enum ChatStatus {
 }
 
 model Message {
-  message_id String   @id @default(uuid())
-  chat_id    String
-  sender_id  String
-  content    String
-  sent_at    DateTime @default(now())
+  id       String   @id @default(uuid())
+  chatId   String
+  senderId String
+  content  String
+  sentAt   DateTime @default(now())
 
-  chat   Chat @relation(fields: [chat_id], references: [chat_id], onDelete: Cascade)
-  sender User @relation(fields: [sender_id], references: [user_id], onDelete: Cascade)
+  chat   Chat @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  sender User @relation(fields: [senderId], references: [id], onDelete: Cascade)
 }
 
 model Transaction {
-  transaction_id   String            @id @default(uuid())
-  wallet_id        String
-  order_id         String
-  amount           Decimal
-  transaction_type TransactionType
-  status           TransactionStatus
-  created_at       DateTime          @default(now())
-  updated_at       DateTime          @updatedAt
+  id              String            @id @default(uuid())
+  walletId        String
+  orderId         String
+  amount          Decimal
+  transactionType TransactionType
+  status          TransactionStatus
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
 
-  wallet Wallet @relation(fields: [wallet_id], references: [wallet_id], onDelete: Cascade)
-  order  Order  @relation(fields: [order_id], references: [order_id], onDelete: Cascade)
+  wallet Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  order  Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
 }
 
 enum TransactionType {
@@ -212,13 +213,13 @@ enum TransactionStatus {
 }
 
 model Rating {
-  rating_id  String   @id @default(uuid())
-  user_id    String
-  seller_id  String
-  rating     Int
-  review     String?
-  created_at DateTime @default(now())
+  id        String   @id @default(uuid())
+  userId    String
+  sellerId  String
+  rating    Int
+  review    String?
+  createdAt DateTime @default(now())
 
-  user   User   @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
-  seller Seller @relation(fields: [seller_id], references: [seller_id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  seller Seller @relation(fields: [sellerId], references: [id], onDelete: Cascade)
 }

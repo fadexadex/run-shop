@@ -3,7 +3,7 @@ import { Prisma, OrderStatus } from "@prisma/client";
 declare global {
   namespace Express {
     interface Request {
-      user?: TokenPayload;
+      user?: IPayload;
     }
   }
 }
@@ -11,6 +11,12 @@ declare global {
 export interface ILoginBody {
   email: string;
   password: string;
+}
+
+export type IPayload = {
+  id: string;
+  email: string;
+  role: string;
 }
 
 export type ICreateProduct = Prisma.ProductCreateInput & { categoryId: string };
@@ -25,5 +31,7 @@ export type ICreateOrder = Prisma.OrderCreateInput & {
 };
 
 export type TokenPayload = Omit<Prisma.UserCreateInput, "password">;
+
+export type IUpdateUser = Prisma.UserUpdateInput;
 
 export type IOrderStatus = OrderStatus;

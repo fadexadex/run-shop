@@ -26,7 +26,8 @@ export class AuthController {
   getMe = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const user = await authService.getMe(req.user.email);
-      res.status(StatusCodes.OK).json(user);
+      const { password, ...safeDetails } = user;
+      res.status(StatusCodes.OK).json(safeDetails);
     } catch (error) {
       next(error);
     }

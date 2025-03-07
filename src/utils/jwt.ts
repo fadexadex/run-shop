@@ -1,7 +1,7 @@
 import jwt from "jsonwebtoken";
-import { TokenPayload } from "./types";
+import { IPayload, TokenPayload } from "./types";
 
-const generateToken = (payload: TokenPayload) => {
+const generateToken = (payload: IPayload) => {
   return jwt.sign(payload, process.env.JWT_SECRET!, {
     expiresIn: "1d",
   });
@@ -12,7 +12,7 @@ const verifyToken = (token: string) => {
   if (typeof decoded === "string") {
     throw new Error("Invalid token");
   }
-  return decoded as TokenPayload;
+  return decoded as IPayload;
 };
 
 export { generateToken, verifyToken };
