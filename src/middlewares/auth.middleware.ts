@@ -24,6 +24,12 @@ export const adminGuard = (req: Request, res: Response, next: NextFunction) => {
   next();
 };
 
+export const sellerGuard = (req: Request, res: Response, next: NextFunction) => {
+  if (req.user.role !== "SELLER") {
+    return next(new AppError("Unauthorized", StatusCodes.FORBIDDEN));
+  }
+  next();
+};
 
 // export const validateUserRequest = ( 
 //   req: Request,

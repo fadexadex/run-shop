@@ -35,6 +35,6 @@ export class AuthService {
   };
 
   getMe = async (email: string) => {
-    return authRepo.findUserByEmail(email);
+    return authRepo.getMe(email);
   };
 }

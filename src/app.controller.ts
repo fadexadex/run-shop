@@ -4,6 +4,7 @@ import { errorHandler } from "./middlewares";
 import authRoutes from "./modules/auth/routes";
 import userRoutes from "./modules/user/routes";
 import sellerRoutes from "./modules/seller/routes";
+import categoryRoutes from "./modules/category/routes";
 
 dotenv.config();
 
@@ -27,6 +28,8 @@ export class Server {
   private setUpRoutes() {
     this.apiRouter.use("/auth", authRoutes);
     this.apiRouter.use("/users", userRoutes);
+    this.apiRouter.use("/sellers", sellerRoutes);
+    this.apiRouter.use("/categories", categoryRoutes);
     this.app.use("/api/v1", this.apiRouter);
     this.app.use(errorHandler);
   }

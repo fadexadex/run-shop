@@ -14,7 +14,7 @@ datasource db {
 }
 
 model User {
-   id              String   @id @default(uuid())
+  id              String   @id @default(uuid())
   email           String   @unique
   password        String
   firstName       String
@@ -26,7 +26,7 @@ model User {
 
   seller   Seller?
   orders   Order[]
-  wishlist Wishlist[]
+  wishlist Wishlist?
   chats    Chat[]
   messages Message[]
   ratings  Rating[]
@@ -79,13 +79,14 @@ model Product {
   price         Decimal
   stockQuantity Int
   categoryId    String
+  imageUrls     String[] 
   createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  updatedAt     DateTime @default(now())
 
   seller     Seller      @relation(fields: [sellerId], references: [id], onDelete: Cascade)
   category   Category    @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   orderItems OrderItem[]
-  wishlist   Wishlist[]
+  wishlistItems WishlistItem[]
 }
 
 model Category {
@@ -141,33 +142,36 @@ model OrderItem {
 
 model Wishlist {
   id        String   @id @default(uuid())
-  userId    String
-  productId String
+  userId    String   @unique
   createdAt DateTime @default(now())
 
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user     User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items    WishlistItem[]
+}
+
+model WishlistItem {
+  id         String   @id @default(uuid())
+  wishlistId String
+  productId  String
+  createdAt  DateTime @default(now())
+
+  wishlist Wishlist @relation(fields: [wishlistId], references: [id], onDelete: Cascade)
+  product  Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
 }
 
 model Chat {
-  id           String       @id @default(uuid())
-  buyerId      String
-  sellerId     String
-  orderId      String?
-  chatPlatform ChatPlatform
-  status       ChatStatus   @default(OPEN)
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
+  id        String       @id @default(uuid())
+  buyerId   String
+  sellerId  String
+  orderId   String?
+  status    ChatStatus   @default(OPEN)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
 
   buyer    User      @relation(fields: [buyerId], references: [id], onDelete: Cascade)
   seller   Seller    @relation(fields: [sellerId], references: [id], onDelete: Cascade)
   order    Order?    @relation(fields: [orderId], references: [id], onDelete: Cascade)
   messages Message[]
-}
-
-enum ChatPlatform {
-  IN_APP
-  WHATSAPP
 }
 
 enum ChatStatus {

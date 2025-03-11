@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "Product" ADD COLUMN     "imageUrls" TEXT[],
+ALTER COLUMN "updatedAt" SET DEFAULT CURRENT_TIMESTAMP;

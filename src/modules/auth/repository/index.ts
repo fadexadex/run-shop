@@ -15,4 +15,15 @@ export class AuthRepository {
       data,
     });
   }
+
+  async getMe(email: string) {
+    return prisma.user.findUnique({
+      where: {
+        email,
+      },
+      include: {
+        seller: true,
+      },
+    });
+  }
 }
