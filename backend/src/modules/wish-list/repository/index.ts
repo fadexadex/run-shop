@@ -35,18 +35,26 @@ export class WishListRepository {
     });
   }
 
-  async getWishlist(userId: string) {
-    return await prisma.wishlist.findMany({
+  async removeProductFromWishList(productId: string, wishlistId: string) {
+    return await prisma.wishlistItem.delete({
       where: {
-        userId,
+        id: productId,
+        wishlistId,
       },
     });
   }
 
-  async removeProductFromWishList(productId: string) {
-    return await prisma.wishlistItem.delete({
+  async getUserWishlist(userId: string) {
+    return await prisma.wishlist.findMany({
       where: {
-        id: productId,
+        userId,
+      },
+      include: {
+        items: {
+          include: {
+            product: true,
+          },
+        },
       },
     });
   }

@@ -6,6 +6,7 @@ import userRoutes from "./modules/user/routes";
 import sellerRoutes from "./modules/seller/routes";
 import categoryRoutes from "./modules/category/routes";
 import productRoutes from "./modules/product/routes";
+import wishListRoutes from "./modules/wish-list/routes";
 import cors from "cors";
 
 dotenv.config();
@@ -34,6 +35,7 @@ export class Server {
     this.apiRouter.use("/sellers", sellerRoutes);
     this.apiRouter.use("/categories", categoryRoutes);
     this.apiRouter.use("/products", productRoutes);
+    this.apiRouter.use("/wish-lists", wishListRoutes);
     this.app.use("/api/v1", this.apiRouter);
     this.app.use(errorHandler);
   }
