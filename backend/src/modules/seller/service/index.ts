@@ -1,4 +1,4 @@
-import { ICreateProduct } from "utils/types";
+import { ICreateProduct, IUpdateProduct } from "utils/types";
 import { SellerRepository } from "../repository";
 import { Prisma } from "@prisma/client";
 
@@ -19,6 +19,10 @@ export class SellerService {
   ) => {
     return sellerRepo.addProductToCatalogue(sellerId, data);
   };
+
+  updateProduct = async (id: string, data: IUpdateProduct) => {
+    return sellerRepo.updateProduct(id, data);
+  }
 
   updateSeller = async (sellerId: string, data: Prisma.SellerUpdateInput) => {
     return sellerRepo.updateSeller(sellerId, data);

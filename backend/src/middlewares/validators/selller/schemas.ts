@@ -23,7 +23,15 @@ export const addProductSchema = Joi.object({
   name: Joi.string().required(),
   description: Joi.string().required(),
   price: Joi.number().required(),
-
   stockQuantity: Joi.number().required(),
   categoryId: Joi.string().required(),
+});
+
+export const updateProductSchema = Joi.object({
+  name: Joi.string().optional(),
+  description: Joi.string().optional(),
+  price: Joi.number().optional(),
+  stockQuantity: Joi.number().optional(),
+  categoryId: Joi.string().optional(),
+  
 });

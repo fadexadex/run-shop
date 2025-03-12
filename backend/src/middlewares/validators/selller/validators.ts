@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { validateId, registerSellerSchema, updateSellerSchema, addProductSchema } from "./schemas";
+import { validateId, registerSellerSchema, updateSellerSchema, addProductSchema, updateProductSchema } from "./schemas";
 
 export class SellerValidator {
   static async validateUserId(req: Request, res: Response, next: NextFunction) {
@@ -32,6 +32,15 @@ export class SellerValidator {
 
   static async validateAddProduct(req: Request, res: Response, next: NextFunction) {
     const { error } = addProductSchema.validate(req.body, { abortEarly: false });
+
+    if (error) {
+      return res.status(400).json({ message: error.details.map((err) => err.message).join(", ") });
+    }
+
+    next();
+  }
+  static async validateUpdateProduct(req: Request, res: Response, next: NextFunction) {
+    const { error } = updateProductSchema.validate(req.body, { abortEarly: false });
 
     if (error) {
       return res.status(400).json({ message: error.details.map((err) => err.message).join(", ") });

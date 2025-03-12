@@ -1,6 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "../../../utils/db";
-import { ICreateProduct } from "utils/types";
+import { ICreateProduct, IUpdateProduct } from "utils/types";
 
 export class SellerRepository {
   async registerSeller(data: Prisma.SellerCreateInput, id: string) {
@@ -58,6 +58,27 @@ export class SellerRepository {
       },
     });
   }
+
+   
+  updateProduct = async (id: string, data: IUpdateProduct) => {
+      const { categoryId, ...productData } = data;
+  
+      return prisma.product.update({
+        where: {
+          id,
+        },
+        data: {
+          ...productData,
+          ...(categoryId && {
+            category: {
+              connect: {
+                id: categoryId,
+              },
+            },
+          }),
+        },
+      });
+    };
 
   async updateSeller(sellerId: string, data: Prisma.SellerUpdateInput) {
     return prisma.seller.update({

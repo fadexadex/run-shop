@@ -70,6 +70,29 @@ export class SellerController {
     }
   };
 
+  updateProduct = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      
+      if (Array.isArray(req.files) && req.files.length > 0) {
+        const files = req.files as Express.Multer.File[];
+        const filePaths = files.map((file) => file.path);
+        req.body.imageUrls = await Promise.all(
+          filePaths.map(async (filePath: string) => {
+            const url = await uploadImageToCloud(filePath);
+            return url;
+          })
+        );
+      }
+      const { id } = req.params;
+      const product = await sellerService.updateProduct(id, req.body);
+      res
+        .status(StatusCodes.OK)
+        .json({ message: "Product has been updated", product });
+    } catch (error) {
+      next(error);
+    }
+  };
+
   updateSeller = async (req: Request, res: Response, next: NextFunction) => {
     try {
       if (req.file.path) {
