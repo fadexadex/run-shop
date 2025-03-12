@@ -5,6 +5,7 @@ import authRoutes from "./modules/auth/routes";
 import userRoutes from "./modules/user/routes";
 import sellerRoutes from "./modules/seller/routes";
 import categoryRoutes from "./modules/category/routes";
+import productRoutes from "./modules/product/routes";
 
 dotenv.config();
 
@@ -30,6 +31,7 @@ export class Server {
     this.apiRouter.use("/users", userRoutes);
     this.apiRouter.use("/sellers", sellerRoutes);
     this.apiRouter.use("/categories", categoryRoutes);
+    this.apiRouter.use("/products", productRoutes);
     this.app.use("/api/v1", this.apiRouter);
     this.app.use(errorHandler);
   }

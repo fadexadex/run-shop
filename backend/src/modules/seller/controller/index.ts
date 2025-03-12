@@ -13,6 +13,15 @@ export class SellerController {
       const { id } = req.user;
       req.body.userId = id;
 
+      if (req.file.path) {
+        req.body.cataloguePicture = await uploadImageToCloud(req.file.path);
+        fs.unlink(req.file.path, (err) => {
+          if (err) {
+            console.error(err);
+          }
+        });
+      }
+
       const seller = await sellerService.registerSeller(req.body, id);
       res.status(StatusCodes.CREATED).json(seller);
     } catch (error) {
@@ -48,12 +57,6 @@ export class SellerController {
       req.body.imageUrls = await Promise.all(
         filePaths.map(async (filePath: string) => {
           const url = await uploadImageToCloud(filePath);
-          fs.unlink(filePath, (err) => {
-            if (err) {
-              console.error(err);
-            }
-          });
-
           return url;
         })
       );
@@ -69,6 +72,10 @@ export class SellerController {
 
   updateSeller = async (req: Request, res: Response, next: NextFunction) => {
     try {
+      if (req.file.path) {
+        req.body.cataloguePicture = await uploadImageToCloud(req.file.path);
+      }
+
       const seller = await sellerService.updateSeller(req.params.id, req.body);
       res
         .status(StatusCodes.OK)

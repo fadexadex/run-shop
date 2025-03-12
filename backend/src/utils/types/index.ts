@@ -35,3 +35,11 @@ export type TokenPayload = Omit<Prisma.UserCreateInput, "password">;
 export type IUpdateUser = Prisma.UserUpdateInput;
 
 export type IOrderStatus = OrderStatus;
+
+export interface ProductFilters {
+  categoryId?: string;
+  price?: {
+    gte?: number;
+    lte?: number;
+  };
+}

@@ -9,7 +9,13 @@ export class CategoryRepository {
   };
 
   getAllCategories = async () => {
-    return prisma.category.findMany();
+    return prisma.category.findMany({
+      include: {
+        products: {
+          take: 4,
+        },
+      },
+    });
   };
 
   getCategoryProducts = async (id: string) => {

@@ -39,12 +39,13 @@ enum Role {
 }
 
 model Seller {
-  id            String        @id @default(uuid())
-  userId        String        @unique
-  catalogueName String
-  paymentMethod PaymentMethod
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  id               String        @id @default(uuid())
+  userId           String        @unique
+  catalogueName    String
+  cataloguePicture String?
+  paymentMethod    PaymentMethod
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
 
   user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   wallet   Wallet?
@@ -79,13 +80,13 @@ model Product {
   price         Decimal
   stockQuantity Int
   categoryId    String
-  imageUrls     String[] 
+  imageUrls     String[]
   createdAt     DateTime @default(now())
   updatedAt     DateTime @default(now())
 
-  seller     Seller      @relation(fields: [sellerId], references: [id], onDelete: Cascade)
-  category   Category    @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  orderItems OrderItem[]
+  seller        Seller         @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  category      Category       @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  orderItems    OrderItem[]
   wishlistItems WishlistItem[]
 }
 
@@ -145,8 +146,8 @@ model Wishlist {
   userId    String   @unique
   createdAt DateTime @default(now())
 
-  user     User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  items    WishlistItem[]
+  user  User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items WishlistItem[]
 }
 
 model WishlistItem {
@@ -160,13 +161,13 @@ model WishlistItem {
 }
 
 model Chat {
-  id        String       @id @default(uuid())
+  id        String     @id @default(uuid())
   buyerId   String
   sellerId  String
   orderId   String?
-  status    ChatStatus   @default(OPEN)
-  createdAt DateTime     @default(now())
-  updatedAt DateTime     @updatedAt
+  status    ChatStatus @default(OPEN)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
 
   buyer    User      @relation(fields: [buyerId], references: [id], onDelete: Cascade)
   seller   Seller    @relation(fields: [sellerId], references: [id], onDelete: Cascade)
