@@ -24,6 +24,11 @@ export class SellerService {
     return sellerRepo.updateProduct(id, data);
   }
 
+  deleteProduct = async (id: string) => {
+
+    return sellerRepo.deleteProduct(id);
+  }
+
   updateSeller = async (sellerId: string, data: Prisma.SellerUpdateInput) => {
     return sellerRepo.updateSeller(sellerId, data);
   };

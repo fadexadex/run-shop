@@ -17,10 +17,12 @@ export type IPayload = {
   id: string;
   email: string;
   role: string;
-}
+};
 
 export type ICreateProduct = Prisma.ProductCreateInput & { categoryId: string };
+
 export type IUpdateProduct = Prisma.ProductUpdateInput & { categoryId: string };
+
 export type ICreateOrder = Prisma.OrderCreateInput & {
   userId: string;
   items: {

@@ -10,9 +10,15 @@ export class ProductController {
     try {
       const page = Number(req.query.page) || 1;
       const limit = Number(req.query.limit) || 10;
-      const filters = req.query.filters ? JSON.parse(req.query.filters as string) : {};
+      const filters = req.query.filters
+        ? JSON.parse(req.query.filters as string)
+        : {};
 
-      const products = await productService.getAllProducts(page, limit, filters);
+      const products = await productService.getAllProducts(
+        page,
+        limit,
+        filters
+      );
 
       res.status(StatusCodes.OK).json({
         data: products,
@@ -33,32 +39,6 @@ export class ProductController {
       }
       res.status(StatusCodes.OK).json({
         data: product,
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  updateProduct = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const id = req.params.id;
-      const data = req.body;
-      const product = await productService.updateProduct(id, data);
-      res.status(StatusCodes.OK).json({
-        message: "Product updated successfully",
-        data: product,
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  deleteProduct = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const id = req.params.id;
-      await productService.deleteProduct(id);
-      res.status(StatusCodes.OK).json({
-        message: "Product deleted successfully",
       });
     } catch (error) {
       next(error);

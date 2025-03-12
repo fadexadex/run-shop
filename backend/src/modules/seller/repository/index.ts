@@ -59,26 +59,33 @@ export class SellerRepository {
     });
   }
 
-   
   updateProduct = async (id: string, data: IUpdateProduct) => {
-      const { categoryId, ...productData } = data;
-  
-      return prisma.product.update({
-        where: {
-          id,
-        },
-        data: {
-          ...productData,
-          ...(categoryId && {
-            category: {
-              connect: {
-                id: categoryId,
-              },
+    const { categoryId, ...productData } = data;
+
+    return prisma.product.update({
+      where: {
+        id,
+      },
+      data: {
+        ...productData,
+        ...(categoryId && {
+          category: {
+            connect: {
+              id: categoryId,
             },
-          }),
-        },
-      });
-    };
+          },
+        }),
+      },
+    });
+  };
+
+  async deleteProduct(id: string) {
+    return prisma.product.delete({
+      where: {
+        id,
+      },
+    });
+  }
 
   async updateSeller(sellerId: string, data: Prisma.SellerUpdateInput) {
     return prisma.seller.update({

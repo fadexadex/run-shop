@@ -6,7 +6,8 @@ import { idValidator } from "../../middlewares/validators/general";
 import { uploadImage } from "../../utils/multer";
 
 const sellerController = new SellerController();
-const { validateRegisterSeller, validateAddProduct , validateUpdateProduct} = SellerValidator;
+const { validateRegisterSeller, validateAddProduct, validateUpdateProduct } =
+  SellerValidator;
 const router = Router();
 
 router.post(
@@ -45,7 +46,8 @@ router.put(
   validateUpdateProduct,
   sellerController.updateProduct
 );
-// router.delete("/:id", authGuard, adminGuard, productIdValidator, productController.deleteProduct);
+
+router.delete("/:id", authGuard, idValidator, sellerController.deleteProduct);
 
 router.put(
   "/:id",

@@ -27,11 +27,5 @@ export class ProductService {
     return productRepository.getProductById(id);
   };
 
-  updateProduct = async (id: string, data: IUpdateProduct) => {
-    return productRepository.updateProduct(id, data);
-  };
 
-  deleteProduct = async (id: string) => {
-    return productRepository.deleteProduct(id);
-  };
 }

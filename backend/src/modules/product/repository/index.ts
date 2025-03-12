@@ -31,31 +31,5 @@ export class ProductRepository {
     });
   };
 
-  updateProduct = async (id: string, data: IUpdateProduct) => {
-    const { categoryId, ...productData } = data;
 
-    return prisma.product.update({
-      where: {
-        id,
-      },
-      data: {
-        ...productData,
-        ...(categoryId && {
-          category: {
-            connect: {
-              id: categoryId,
-            },
-          },
-        }),
-      },
-    });
-  };
-
-  deleteProduct = async (id: string) => {
-    return prisma.product.delete({
-      where: {
-        id,
-      },
-    });
-  };
 }

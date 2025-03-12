@@ -72,7 +72,6 @@ export class SellerController {
 
   updateProduct = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      
       if (Array.isArray(req.files) && req.files.length > 0) {
         const files = req.files as Express.Multer.File[];
         const filePaths = files.map((file) => file.path);
@@ -88,6 +87,21 @@ export class SellerController {
       res
         .status(StatusCodes.OK)
         .json({ message: "Product has been updated", product });
+    } catch (error) {
+      if (error.code === "P2025") {
+        next(new AppError("Product not found", StatusCodes.NOT_FOUND));
+      }
+      next(error);
+    }
+  };
+
+  deleteProduct = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { id } = req.params;
+      await sellerService.deleteProduct(id);
+      res
+        .status(StatusCodes.OK)
+        .json({ message: "Product deleted successfully" });
     } catch (error) {
       next(error);
     }

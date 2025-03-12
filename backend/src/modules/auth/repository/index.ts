@@ -23,6 +23,11 @@ export class AuthRepository {
       },
       include: {
         seller: true,
+        wishlist: {
+          select: {
+            id: true,
+          },
+        },
       },
     });
   }
