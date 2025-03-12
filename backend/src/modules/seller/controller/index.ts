@@ -13,13 +13,8 @@ export class SellerController {
       const { id } = req.user;
       req.body.userId = id;
 
-      if (req.file.path) {
+      if (req.file) {
         req.body.cataloguePicture = await uploadImageToCloud(req.file.path);
-        fs.unlink(req.file.path, (err) => {
-          if (err) {
-            console.error(err);
-          }
-        });
       }
 
       const seller = await sellerService.registerSeller(req.body, id);
