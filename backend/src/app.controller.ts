@@ -6,6 +6,7 @@ import userRoutes from "./modules/user/routes";
 import sellerRoutes from "./modules/seller/routes";
 import categoryRoutes from "./modules/category/routes";
 import productRoutes from "./modules/product/routes";
+import cors from "cors";
 
 dotenv.config();
 
@@ -23,6 +24,7 @@ export class Server {
   private enableMiddlewares() {
     this.app.use(express.json());
     this.app.use(express.urlencoded({ extended: true }));
+    this.app.use(cors());
     this.app.use(errorHandler);
   }
 
