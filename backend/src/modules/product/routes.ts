@@ -1,6 +1,5 @@
 import { ProductController } from "./controller";
 import { Router } from "express";
-import { authGuard } from "../../middlewares/auth.middleware";
 import {
   productIdValidator,
   productFiltersValidator,
@@ -11,13 +10,11 @@ const router = Router();
 
 router.get(
   "/all",
-  authGuard,
   productFiltersValidator,
   productController.getAllProducts
 );
 router.get(
   "/:id",
-  authGuard,
   productIdValidator,
   productController.getProductById
 );

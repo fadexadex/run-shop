@@ -11,7 +11,7 @@ router.post("/create",authGuard, adminGuard,categoryValidator, categoryControlle
 
 router.get("/all", categoryController.getAllCategories);
 
-router.get("/:id",authGuard, categoryIdValidator, categoryController.getCategoryProducts);
+router.get("/:id", categoryIdValidator, categoryController.getCategoryProducts);
 
 router.put("/:id",authGuard, adminGuard, categoryIdValidator, categoryValidator,  categoryController.updateCategory);
 
