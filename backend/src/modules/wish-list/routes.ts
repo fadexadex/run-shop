@@ -1,7 +1,7 @@
 import {  WishListController } from "./controller";
 import { Router } from "express";
 import { authGuard } from "../../middlewares";
-import { idValidator } from "middlewares/validators/general";
+import { idValidator } from "../../middlewares/validators/general";
 
 
 const wishListController = new WishListController();

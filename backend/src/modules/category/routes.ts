@@ -9,7 +9,7 @@ const router = Router();
 
 router.post("/create",authGuard, adminGuard,categoryValidator, categoryController.createCategory); 
 
-router.get("/all", authGuard, categoryController.getAllCategories);
+router.get("/all", categoryController.getAllCategories);
 
 router.get("/:id",authGuard, categoryIdValidator, categoryController.getCategoryProducts);
 

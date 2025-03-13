@@ -1,7 +1,7 @@
 import { AuthService } from "../service";
 import { Request, Response, NextFunction } from "express";
 import { StatusCodes } from "http-status-codes";
-import { WishListService } from "../../../modules/wishllist/service";
+import { WishListService } from "../../../modules/wish-list/service";
 import { verifyToken } from "../../../utils/jwt";
 
 const authService = new AuthService();
