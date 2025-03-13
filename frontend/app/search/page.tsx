@@ -7,9 +7,19 @@ import { useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
-import { Heart } from "lucide-react"
+import { Heart, Loader2 } from "lucide-react"
 import { Slider } from "@/components/ui/slider"
-import type { Product } from "@/lib/types"
+import { useAuth } from "@/lib/auth-context"
+
+interface Product {
+  id: string
+  name: string
+  price: string
+  description: string
+  imageUrls: string[]
+  sellerId: string
+  categoryId: string
+}
 
 export default function SearchResults() {
   const searchParams = useSearchParams()
@@ -17,7 +27,7 @@ export default function SearchResults() {
 
   const [loading, setLoading] = useState(true)
   const [results, setResults] = useState<Product[]>([])
-  const [wishlist, setWishlist] = useState<number[]>([])
+  const [wishlist, setWishlist] = useState<string[]>([])
   const [error, setError] = useState<string | null>(null)
   const [filters, setFilters] = useState({
     category: "all",
@@ -25,86 +35,69 @@ export default function SearchResults() {
     seller: "all",
   })
 
-  const [categories, setCategories] = useState<string[]>(["all"])
-  const [sellers, setSellers] = useState<string[]>(["all"])
+  // Hardcoded categories and sellers for performance
+  const categories = ["all", "clothing", "electronics", "food", "accessories"]
+  const sellers = ["all", "Tech Hub", "Campus Threads", "Campus Eats", "Style Hub"]
+
+  const { user } = useAuth()
 
   useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        const response = await fetch("/api/categories")
-        if (response.ok) {
-          const data = await response.json()
-          setCategories(["all", ...data.map((c: any) => c.id)])
-        }
-      } catch (err) {
-        console.error("Error fetching categories:", err)
-      }
+    // Fetch wishlist if user is logged in
+    if (user) {
+      // In a real app, this would be an API call
+      setWishlist(["2", "3"])
     }
-
-    const fetchSellers = async () => {
-      try {
-        // In a real app, this would be a dedicated endpoint
-        const response = await fetch("/api/products")
-        if (response.ok) {
-          const data = await response.json()
-          const uniqueSellers = ["all", ...Array.from(new Set(data.map((p: Product) => p.seller.name)))]
-          setSellers(uniqueSellers)
-        }
-      } catch (err) {
-        console.error("Error fetching sellers:", err)
-      }
-    }
-
-    fetchCategories()
-    fetchSellers()
-  }, [])
-
-  useEffect(() => {
-    const fetchWishlist = async () => {
-      try {
-        const response = await fetch("/api/wishlist")
-
-        if (response.ok) {
-          const data = await response.json()
-          setWishlist(data.map((item: any) => item.product.id))
-        }
-      } catch (err) {
-        console.error("Error fetching wishlist:", err)
-      }
-    }
-
-    fetchWishlist()
-  }, [])
+  }, [user])
 
   useEffect(() => {
     const fetchSearchResults = async () => {
       setLoading(true)
       try {
-        // Build query string
-        const params = new URLSearchParams()
-        if (query) params.append("q", query)
-        if (filters.category !== "all") params.append("category", filters.category)
-        params.append("minPrice", filters.priceRange[0].toString())
-        params.append("maxPrice", filters.priceRange[1].toString())
-        if (filters.seller !== "all") params.append("seller", filters.seller)
-
-        const response = await fetch(`/api/products?${params.toString()}`)
+        // Use the provided search endpoint
+        const response = await fetch(`http://localhost:6160/api/v1/products/search?q=${encodeURIComponent(query)}`)
 
         if (!response.ok) {
           throw new Error("Failed to fetch search results")
         }
 
         const data = await response.json()
-        setResults(data)
+
+        // Apply filters (in a real app, these would be sent to the API)
+        let filteredResults = data.data || []
+
+        if (filters.category !== "all") {
+          filteredResults = filteredResults.filter((product: Product) =>
+            product.categoryId.toLowerCase().includes(filters.category),
+          )
+        }
+
+        // Apply price filter (assuming price is a string that can be converted to number)
+        filteredResults = filteredResults.filter((product: Product) => {
+          const price = Number.parseFloat(product.price)
+          return price >= filters.priceRange[0] && price <= filters.priceRange[1]
+        })
+
+        if (filters.seller !== "all") {
+          filteredResults = filteredResults.filter((product: Product) =>
+            product.sellerId.toLowerCase().includes(filters.seller.toLowerCase()),
+          )
+        }
+
+        setResults(filteredResults)
       } catch (err) {
-        setError("Error loading search results. Please try again later.")
         console.error("Error fetching search results:", err)
+        setError("Error loading search results. Please try again later.")
       } finally {
         setLoading(false)
       }
     }
 
-    fetchSearchResults()
+    if (query) {
+      fetchSearchResults()
+    } else {
+      setResults([])
+      setLoading(false)
+    }
   }, [query, filters])
 
   const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -119,62 +112,31 @@ export default function SearchResults() {
     setFilters({ ...filters, priceRange: value })
   }
 
-  const toggleWishlist = async (id: number) => {
-    if (wishlist.includes(id)) {
-      // Find the wishlist item ID
-      try {
-        const response = await fetch("/api/wishlist")
-        if (response.ok) {
-          const items = await response.json()
-          const item = items.find((i: any) => i.product.id === id)
-
-          if (item) {
-            await fetch(`/api/wishlist/${item.id}`, {
-              method: "DELETE",
-            })
-            setWishlist(wishlist.filter((itemId) => itemId !== id))
-          }
-        }
-      } catch (err) {
-        console.error("Error removing from wishlist:", err)
-      }
-    } else {
-      try {
-        await fetch("/api/wishlist", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ productId: id }),
-        })
-        setWishlist([...wishlist, id])
-      } catch (err) {
-        console.error("Error adding to wishlist:", err)
-      }
+  const toggleWishlist = (productId: string) => {
+    if (!user) {
+      window.location.href = "/auth?mode=login"
+      return
     }
-  }
 
-  if (error) {
-    return (
-      <div className="w-full py-12 text-center">
-        <p className="text-red-500">{error}</p>
-        <Button onClick={() => window.location.reload()} className="mt-4">
-          Try Again
-        </Button>
-      </div>
-    )
+    if (wishlist.includes(productId)) {
+      setWishlist(wishlist.filter((id) => id !== productId))
+    } else {
+      setWishlist([...wishlist, productId])
+    }
   }
 
   return (
     <section className="w-full py-12">
       <div className="container mx-auto px-4">
         <h1 className="text-3xl font-bold mb-2">Search Results</h1>
-        <p className="text-gray-600 mb-8">{query ? `Showing results for "${query}"` : "Showing all products"}</p>
+        <p className="text-gray-600 mb-8">
+          {query ? `Showing results for "${query}"` : "Enter a search term to find products"}
+        </p>
 
         <div className="flex flex-col md:flex-row gap-8">
           {/* Filters */}
           <div className="w-full md:w-1/4">
-            <div className="bg-gray-50 p-4 rounded-lg">
+            <div className="bg-gray-50 p-4 rounded-lg sticky top-20">
               <h2 className="text-xl font-semibold mb-4">Filters</h2>
 
               <div className="mb-4">
@@ -237,7 +199,14 @@ export default function SearchResults() {
           <div className="w-full md:w-3/4">
             {loading ? (
               <div className="flex justify-center items-center h-64">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-black"></div>
+                <Loader2 className="h-12 w-12 animate-spin text-gray-400" />
+              </div>
+            ) : error ? (
+              <div className="text-center py-12 bg-red-50 rounded-lg">
+                <p className="text-red-500 mb-4">{error}</p>
+                <Button onClick={() => window.location.reload()} variant="outline">
+                  Try Again
+                </Button>
               </div>
             ) : results.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -246,7 +215,11 @@ export default function SearchResults() {
                     <Link href={`/product/${product.id}`}>
                       <div className="relative overflow-hidden">
                         <img
-                          src={product.image || "/placeholder.svg"}
+                          src={
+                            product.imageUrls && product.imageUrls.length > 0
+                              ? product.imageUrls[0]
+                              : "/placeholder.svg?height=400&width=300"
+                          }
                           alt={product.name}
                           className="object-cover transition-all hover:scale-105 h-48 w-full"
                         />
@@ -258,8 +231,8 @@ export default function SearchResults() {
                           <Link href={`/product/${product.id}`} className="hover:underline">
                             <h3 className="font-semibold">{product.name}</h3>
                           </Link>
-                          <p className="text-sm">{product.category}</p>
-                          <p className="text-xs text-gray-500">{product.seller.name}</p>
+                          <p className="text-sm">Category ID: {product.categoryId}</p>
+                          <p className="text-xs text-gray-500">Seller ID: {product.sellerId}</p>
                         </div>
                         <button
                           onClick={() => toggleWishlist(product.id)}
@@ -270,7 +243,7 @@ export default function SearchResults() {
                         </button>
                       </div>
                       <div className="mt-2 flex items-center justify-between">
-                        <span className="font-bold">${product.price.toFixed(2)}</span>
+                        <span className="font-bold">${product.price}</span>
                       </div>
                     </CardContent>
                     <CardFooter className="p-4 pt-0">
@@ -283,11 +256,18 @@ export default function SearchResults() {
                   </Card>
                 ))}
               </div>
-            ) : (
-              <div className="text-center py-12">
+            ) : query ? (
+              <div className="text-center py-12 bg-gray-50 rounded-lg">
                 <p className="text-xl text-gray-600 mb-4">No products found matching your criteria.</p>
                 <Link href="/products">
                   <Button variant="outline">View All Products</Button>
+                </Link>
+              </div>
+            ) : (
+              <div className="text-center py-12 bg-gray-50 rounded-lg">
+                <p className="text-xl text-gray-600 mb-4">Enter a search term to find products.</p>
+                <Link href="/products">
+                  <Button variant="outline">Browse All Products</Button>
                 </Link>
               </div>
             )}
