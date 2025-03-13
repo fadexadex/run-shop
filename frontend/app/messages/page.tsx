@@ -1,161 +1,245 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import Link from "next/link"
-import { useAuth } from "@/components/auth/auth-context"
-import RequireAuth from "@/components/auth/require-auth"
-import { Button } from "@/components/ui/button"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import type React from "react"
 
-interface ChatPreview {
-  id: string
-  sellerId: string
-  sellerName: string
-  sellerAvatar?: string
-  lastMessage: string
-  timestamp: Date
-  unread: boolean
-  productId?: string
-  productName?: string
+import { useState, useEffect } from "react"
+import { Button } from "@/components/ui/button"
+import { useAuth } from "@/lib/auth-context"
+import { Send } from "lucide-react"
+
+interface Message {
+  id: number
+  senderId: string
+  receiverId: string
+  content: string
+  timestamp: string
+  orderId?: number
 }
 
-export default function MessagesPage() {
-  const { user } = useAuth()
-  const [chats, setChats] = useState<ChatPreview[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+interface Conversation {
+  [key: string]: Message[]
+}
+
+export default function Messages() {
+  const { user, isLoading: authLoading } = useAuth()
+  const [conversations, setConversations] = useState<Conversation>({})
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [activeConversation, setActiveConversation] = useState<string | null>(null)
+  const [newMessage, setNewMessage] = useState("")
 
   useEffect(() => {
-    const fetchChats = async () => {
+    const fetchMessages = async () => {
       if (!user) return
 
-      setIsLoading(true)
       try {
-        // Simulate API call
-        await new Promise((resolve) => setTimeout(resolve, 1000))
+        setLoading(true)
+        const response = await fetch("/api/messages")
 
-        // Mock data
-        const mockChats: ChatPreview[] = [
-          {
-            id: "chat1",
-            sellerId: "seller1",
-            sellerName: "Campus Threads",
-            sellerAvatar: "/placeholder.svg?height=200&width=200",
-            lastMessage: "Yes, the T-Shirt is still available in medium size.",
-            timestamp: new Date(Date.now() - 3600000), // 1 hour ago
-            unread: true,
-            productId: "1",
-            productName: "T-Shirt",
-          },
-          {
-            id: "chat2",
-            sellerId: "seller2",
-            sellerName: "Campus Eats",
-            sellerAvatar: "/placeholder.svg?height=200&width=200",
-            lastMessage: "Your order will be ready for pickup in 15 minutes.",
-            timestamp: new Date(Date.now() - 86400000), // 1 day ago
-            unread: false,
-            productId: "4",
-            productName: "Jollof Rice",
-          },
-          {
-            id: "chat3",
-            sellerId: "seller3",
-            sellerName: "Tech Gear",
-            sellerAvatar: "/placeholder.svg?height=200&width=200",
-            lastMessage: "We just got new headphones in stock if you're still interested.",
-            timestamp: new Date(Date.now() - 172800000), // 2 days ago
-            unread: false,
-            productId: "7",
-            productName: "Headphones",
-          },
-        ]
+        if (!response.ok) {
+          throw new Error("Failed to fetch messages")
+        }
 
-        setChats(mockChats)
-      } catch (error) {
-        console.error("Error fetching chats:", error)
+        const data = await response.json()
+        setConversations(data)
+
+        // Set first conversation as active if there are any
+        const conversationKeys = Object.keys(data)
+        if (conversationKeys.length > 0 && !activeConversation) {
+          setActiveConversation(conversationKeys[0])
+        }
+      } catch (err) {
+        setError("Error loading messages. Please try again later.")
+        console.error("Error fetching messages:", err)
       } finally {
-        setIsLoading(false)
+        setLoading(false)
       }
     }
 
-    fetchChats()
-  }, [user])
+    fetchMessages()
+  }, [user, activeConversation])
 
-  // Format timestamp
-  const formatTime = (date: Date) => {
-    const now = new Date()
-    const diffInDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24))
+  const sendMessage = async (e: React.FormEvent) => {
+    e.preventDefault()
 
-    if (diffInDays === 0) {
-      return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-    } else if (diffInDays === 1) {
-      return "Yesterday"
-    } else if (diffInDays < 7) {
-      return date.toLocaleDateString([], { weekday: "short" })
-    } else {
-      return date.toLocaleDateString([], { month: "short", day: "numeric" })
+    if (!activeConversation || !newMessage.trim()) return
+
+    try {
+      const response = await fetch("/api/messages", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          receiverId: activeConversation,
+          content: newMessage,
+        }),
+      })
+
+      if (response.ok) {
+        const sentMessage = await response.json()
+
+        // Update conversations state
+        setConversations((prev) => ({
+          ...prev,
+          [activeConversation]: [...(prev[activeConversation] || []), sentMessage],
+        }))
+
+        setNewMessage("")
+      } else {
+        throw new Error("Failed to send message")
+      }
+    } catch (err) {
+      console.error("Error sending message:", err)
+      alert("Failed to send message. Please try again.")
     }
   }
 
-  return (
-    <div className="container mx-auto py-8">
-      <h1 className="mb-6 text-2xl font-bold">Messages</h1>
+  if (authLoading) {
+    return (
+      <div className="w-full py-16 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-black"></div>
+      </div>
+    )
+  }
 
-      <RequireAuth
-        fallback={
-          <div className="rounded-lg border bg-white p-8 text-center shadow-sm">
-            <h2 className="mb-4 text-2xl font-bold">Login Required</h2>
-            <p className="mb-6 text-gray-600">You need to login or create an account to view your messages.</p>
-            <Button className="bg-black text-white">Login to Continue</Button>
+  if (!user) {
+    return (
+      <div className="w-full py-16 flex flex-col items-center justify-center">
+        <h2 className="text-2xl font-bold mb-4">Please Log In</h2>
+        <p className="mb-6">You need to be logged in to view your messages.</p>
+        <Button href="/login" as="a">
+          Log In
+        </Button>
+      </div>
+    )
+  }
+
+  const formatTimestamp = (timestamp: string) => {
+    const date = new Date(timestamp)
+    return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+  }
+
+  return (
+    <section className="w-full py-12">
+      <div className="container mx-auto px-4">
+        <h1 className="text-3xl font-bold mb-6">Messages</h1>
+
+        {loading ? (
+          <div className="flex justify-center items-center h-64">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-black"></div>
           </div>
-        }
-      >
-        {isLoading ? (
-          <div className="flex h-[50vh] items-center justify-center">
-            <div className="h-12 w-12 animate-spin rounded-full border-t-2 border-b-2 border-black"></div>
+        ) : error ? (
+          <div className="text-center py-8">
+            <p className="text-red-500">{error}</p>
+            <Button onClick={() => window.location.reload()} className="mt-4" variant="outline">
+              Try Again
+            </Button>
           </div>
-        ) : chats.length > 0 ? (
-          <div className="rounded-lg border bg-white">
-            {chats.map((chat, index) => (
-              <Link
-                key={chat.id}
-                href={`/chat/${chat.sellerId}${chat.productId ? `?productId=${chat.productId}` : ""}`}
-              >
-                <div
-                  className={`flex cursor-pointer items-center gap-4 p-4 hover:bg-gray-50 ${index !== chats.length - 1 ? "border-b" : ""}`}
-                >
-                  <Avatar className="h-12 w-12">
-                    <AvatarImage
-                      src={chat.sellerAvatar || "/placeholder.svg?height=48&width=48"}
-                      alt={chat.sellerName}
-                    />
-                    <AvatarFallback>{chat.sellerName.charAt(0)}</AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between">
-                      <h3 className="font-medium">{chat.sellerName}</h3>
-                      <span className="text-xs text-gray-500">{formatTime(chat.timestamp)}</span>
+        ) : Object.keys(conversations).length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            {/* Conversation List */}
+            <div className="md:col-span-1 border rounded-lg overflow-hidden">
+              <div className="bg-gray-100 p-3 border-b">
+                <h2 className="font-semibold">Conversations</h2>
+              </div>
+              <div className="divide-y">
+                {Object.keys(conversations).map((receiverId) => {
+                  const messages = conversations[receiverId]
+                  const lastMessage = messages[messages.length - 1]
+
+                  return (
+                    <div
+                      key={receiverId}
+                      className={`p-3 cursor-pointer hover:bg-gray-50 ${
+                        activeConversation === receiverId ? "bg-gray-100" : ""
+                      }`}
+                      onClick={() => setActiveConversation(receiverId)}
+                    >
+                      <div className="font-medium">
+                        {receiverId.startsWith("seller") ? `Seller ${receiverId.replace("seller", "")}` : receiverId}
+                      </div>
+                      <div className="text-sm text-gray-500 truncate">{lastMessage.content}</div>
+                      <div className="text-xs text-gray-400">
+                        {new Date(lastMessage.timestamp).toLocaleDateString()}
+                      </div>
                     </div>
-                    {chat.productName && <p className="text-xs text-gray-500">Re: {chat.productName}</p>}
-                    <p className={`mt-1 truncate text-sm ${chat.unread ? "font-semibold" : "text-gray-600"}`}>
-                      {chat.lastMessage}
-                    </p>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* Message View */}
+            <div className="md:col-span-3 border rounded-lg flex flex-col h-[600px]">
+              {activeConversation ? (
+                <>
+                  <div className="bg-gray-100 p-3 border-b">
+                    <h2 className="font-semibold">
+                      {activeConversation.startsWith("seller")
+                        ? `Seller ${activeConversation.replace("seller", "")}`
+                        : activeConversation}
+                    </h2>
                   </div>
-                  {chat.unread && <div className="h-2.5 w-2.5 rounded-full bg-black"></div>}
+
+                  <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                    {conversations[activeConversation].map((message) => (
+                      <div
+                        key={message.id}
+                        className={`flex ${message.senderId === user.id ? "justify-end" : "justify-start"}`}
+                      >
+                        <div
+                          className={`max-w-[70%] rounded-lg p-3 ${
+                            message.senderId === user.id ? "bg-blue-500 text-white" : "bg-gray-200"
+                          }`}
+                        >
+                          <div>{message.content}</div>
+                          <div
+                            className={`text-xs mt-1 ${
+                              message.senderId === user.id ? "text-blue-100" : "text-gray-500"
+                            }`}
+                          >
+                            {formatTimestamp(message.timestamp)}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="p-3 border-t">
+                    <form onSubmit={sendMessage} className="flex gap-2">
+                      <input
+                        type="text"
+                        value={newMessage}
+                        onChange={(e) => setNewMessage(e.target.value)}
+                        placeholder="Type a message..."
+                        className="flex-1 p-2 border rounded-md"
+                      />
+                      <Button type="submit" className="bg-black">
+                        <Send className="h-4 w-4" />
+                      </Button>
+                    </form>
+                  </div>
+                </>
+              ) : (
+                <div className="flex items-center justify-center h-full text-gray-500">
+                  Select a conversation to start messaging
                 </div>
-              </Link>
-            ))}
+              )}
+            </div>
           </div>
         ) : (
-          <div className="rounded-lg border bg-white p-8 text-center">
-            <p className="mb-4 text-gray-600">You don't have any messages yet.</p>
-            <Link href="/products">
-              <Button className="bg-black text-white">Browse Products</Button>
-            </Link>
+          <div className="text-center py-12 bg-gray-50 rounded-lg">
+            <p className="text-xl text-gray-600 mb-4">You don&apos;t have any messages yet.</p>
+            <p className="text-gray-500 mb-6">
+              Start a conversation by viewing a product and chatting with the seller.
+            </p>
+            <Button href="/products" as="a">
+              Browse Products
+            </Button>
           </div>
         )}
-      </RequireAuth>
-    </div>
+      </div>
+    </section>
   )
 }
 

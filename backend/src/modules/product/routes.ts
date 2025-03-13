@@ -13,10 +13,15 @@ router.get(
   productFiltersValidator,
   productController.getAllProducts
 );
+
+//search products
+
 router.get(
   "/:id",
   productIdValidator,
   productController.getProductById
 );
+
+
 
 export default router;

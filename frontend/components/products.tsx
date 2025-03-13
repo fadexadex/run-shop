@@ -1,51 +1,103 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Heart } from "lucide-react"
+import { productsApi, wishlistApi } from "@/lib/api"
+import { useAuth } from "@/lib/auth-context"
+
+interface Product {
+  id: string
+  name: string
+  price: string
+  imageUrls: string[]
+  category: {
+    id: string
+    name: string
+  }
+}
 
 export default function Products() {
-  const [wishlist, setWishlist] = useState<number[]>([])
+  const [products, setProducts] = useState<Product[]>([])
+  const [wishlist, setWishlist] = useState<string[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const { user } = useAuth()
 
-  const products = [
-    {
-      id: 1,
-      name: "T-Shirt",
-      price: 9.99,
-      image: "/placeholder.svg?height=400&width=300",
-      category: "Clothing",
-    },
-    {
-      id: 2,
-      name: "Cross Bag",
-      price: 19.99,
-      image: "/placeholder.svg?height=400&width=300",
-      category: "Accessories",
-    },
-    {
-      id: 3,
-      name: "Jewellery Set",
-      price: 29.99,
-      image: "/placeholder.svg?height=400&width=300",
-      category: "Accessories",
-    },
-    {
-      id: 4,
-      name: "Jollof Rice",
-      price: 5.99,
-      image: "/placeholder.svg?height=400&width=300",
-      category: "Food",
-    },
-  ]
-
-  const toggleWishlist = (id: number) => {
-    if (wishlist.includes(id)) {
-      setWishlist(wishlist.filter((itemId) => itemId !== id))
-    } else {
-      setWishlist([...wishlist, id])
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        setLoading(true)
+        const response = await productsApi.getAll({ limit: 4 })
+        setProducts(response.data.products)
+      } catch (err: any) {
+        console.error("Error fetching products:", err)
+        setError("Failed to load products")
+      } finally {
+        setLoading(false)
+      }
     }
+
+    fetchProducts()
+  }, [])
+
+  useEffect(() => {
+    // Fetch wishlist if user is logged in
+    const fetchWishlist = async () => {
+      if (!user) return
+
+      try {
+        const response = await wishlistApi.getWishlist()
+        if (response && response.data) {
+          setWishlist(response.data.map((item: any) => item.productId))
+        }
+      } catch (err) {
+        console.error("Error fetching wishlist:", err)
+      }
+    }
+
+    fetchWishlist()
+  }, [user])
+
+  const toggleWishlist = async (productId: string) => {
+    if (!user) {
+      // Redirect to login if not logged in
+      window.location.href = "/login"
+      return
+    }
+
+    try {
+      if (wishlist.includes(productId)) {
+        await wishlistApi.removeFromWishlist(productId)
+        setWishlist(wishlist.filter((id) => id !== productId))
+      } else {
+        await wishlistApi.addToWishlist(productId)
+        setWishlist([...wishlist, productId])
+      }
+    } catch (err) {
+      console.error("Error updating wishlist:", err)
+    }
+  }
+
+  if (loading) {
+    return (
+      <section className="w-full py-6 md:py-8 lg:py-16 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-black"></div>
+      </section>
+    )
+  }
+
+  if (error) {
+    return (
+      <section className="w-full py-6 md:py-8 lg:py-16 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-500 mb-4">{error}</p>
+          <Button onClick={() => window.location.reload()}>Try Again</Button>
+        </div>
+      </section>
+    )
   }
 
   return (
@@ -59,13 +111,18 @@ export default function Products() {
             </p>
           </div>
         </div>
+
         <div className="mx-auto grid max-w-7xl grid-cols-1 gap-6 py-12 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
           {products.map((product) => (
             <Card key={product.id} className="overflow-hidden rounded-lg border">
               <Link href={`/product/${product.id}`}>
                 <div className="relative overflow-hidden">
                   <img
-                    src={product.image || "/placeholder.svg"}
+                    src={
+                      product.imageUrls && product.imageUrls.length > 0
+                        ? product.imageUrls[0]
+                        : "/placeholder.svg?height=400&width=300"
+                    }
                     alt={product.name}
                     className="object-cover transition-all hover:scale-105 h-48 w-full"
                     width={300}
@@ -79,7 +136,7 @@ export default function Products() {
                     <Link href={`/product/${product.id}`} className="hover:underline">
                       <h3 className="font-semibold tracking-tight">{product.name}</h3>
                     </Link>
-                    <p className="text-sm">{product.category}</p>
+                    <p className="text-sm">{product.category?.name || "Uncategorized"}</p>
                   </div>
                   <button
                     onClick={() => toggleWishlist(product.id)}
@@ -90,7 +147,7 @@ export default function Products() {
                   </button>
                 </div>
                 <div className="mt-2 flex items-center justify-between">
-                  <span className="font-bold">${product.price.toFixed(2)}</span>
+                  <span className="font-bold">${Number.parseFloat(product.price).toFixed(2)}</span>
                 </div>
               </CardContent>
               <CardFooter className="p-4 pt-0">
@@ -103,6 +160,7 @@ export default function Products() {
             </Card>
           ))}
         </div>
+
         <div className="flex justify-center">
           <Link href="/products">
             <Button variant="outline" size="lg">

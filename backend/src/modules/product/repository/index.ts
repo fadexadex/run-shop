@@ -30,6 +30,9 @@ export class ProductRepository {
       },
     });
   };
+  searchProducts = async(query: string)=>{
+    
+  }
 
 
 }

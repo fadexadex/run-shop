@@ -6,48 +6,99 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Trash2, ShoppingCart } from "lucide-react"
 
+interface WishlistProduct {
+  id: number
+  dateAdded: string
+  product: {
+    id: number
+    name: string
+    price: number
+    image: string
+    category: string
+  }
+}
+
 export default function Wishlist() {
   const [loading, setLoading] = useState(true)
-  const [wishlistItems, setWishlistItems] = useState<any[]>([])
-
-  // Mock data for demonstration
-  const mockWishlistItems = [
-    {
-      id: 1,
-      name: "T-Shirt",
-      price: 9.99,
-      image: "/placeholder.svg?height=400&width=300",
-      category: "Clothing",
-      dateAdded: "2023-11-15",
-    },
-    {
-      id: 3,
-      name: "Jewellery Set",
-      price: 29.99,
-      image: "/placeholder.svg?height=400&width=300",
-      category: "Accessories",
-      dateAdded: "2023-11-10",
-    },
-    {
-      id: 5,
-      name: "Laptop Bag",
-      price: 24.99,
-      image: "/placeholder.svg?height=400&width=300",
-      category: "Accessories",
-      dateAdded: "2023-11-05",
-    },
-  ]
+  const [wishlistItems, setWishlistItems] = useState<WishlistProduct[]>([])
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    // Simulate API call
-    setTimeout(() => {
-      setWishlistItems(mockWishlistItems)
-      setLoading(false)
-    }, 500)
+    const fetchWishlist = async () => {
+      try {
+        setLoading(true)
+        const response = await fetch("/api/wishlist")
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch wishlist")
+        }
+
+        const data = await response.json()
+        setWishlistItems(data)
+      } catch (err) {
+        setError("Error loading wishlist. Please try again later.")
+        console.error("Error fetching wishlist:", err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchWishlist()
   }, [])
 
-  const removeFromWishlist = (id: number) => {
-    setWishlistItems(wishlistItems.filter((item) => item.id !== id))
+  const removeFromWishlist = async (id: number) => {
+    try {
+      const response = await fetch(`/api/wishlist/${id}`, {
+        method: "DELETE",
+      })
+
+      if (response.ok) {
+        setWishlistItems(wishlistItems.filter((item) => item.id !== id))
+      } else {
+        throw new Error("Failed to remove item from wishlist")
+      }
+    } catch (err) {
+      console.error("Error removing from wishlist:", err)
+      alert("Failed to remove item from wishlist. Please try again.")
+    }
+  }
+
+  const handleBuyNow = async (productId: number) => {
+    try {
+      const response = await fetch("/api/orders", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          productId,
+          quantity: 1,
+          paymentMethod: "online",
+        }),
+      })
+
+      if (response.ok) {
+        alert("Order placed successfully! Redirecting to payment gateway...")
+        // In a real app, this would redirect to a payment gateway
+      } else {
+        const error = await response.json()
+        alert(`Error: ${error.error || "Failed to place order"}`)
+      }
+    } catch (err) {
+      console.error("Error placing order:", err)
+      alert("Failed to place order. Please try again.")
+    }
+  }
+
+  if (error) {
+    return (
+      <div className="w-full py-12 text-center">
+        <p className="text-red-500">{error}</p>
+        <Button onClick={() => window.location.reload()} className="mt-4">
+          Try Again
+        </Button>
+      </div>
+    )
   }
 
   return (
@@ -64,29 +115,33 @@ export default function Wishlist() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {wishlistItems.map((item) => (
               <Card key={item.id} className="overflow-hidden rounded-lg border">
-                <Link href={`/product/${item.id}`}>
+                <Link href={`/product/${item.product.id}`}>
                   <div className="relative overflow-hidden">
                     <img
-                      src={item.image || "/placeholder.svg"}
-                      alt={item.name}
+                      src={item.product.image || "/placeholder.svg"}
+                      alt={item.product.name}
                       className="object-cover transition-all hover:scale-105 h-48 w-full"
                     />
                   </div>
                 </Link>
                 <CardContent className="p-4">
                   <div className="space-y-1">
-                    <Link href={`/product/${item.id}`} className="hover:underline">
-                      <h3 className="font-semibold">{item.name}</h3>
+                    <Link href={`/product/${item.product.id}`} className="hover:underline">
+                      <h3 className="font-semibold">{item.product.name}</h3>
                     </Link>
-                    <p className="text-sm">{item.category}</p>
+                    <p className="text-sm">{item.product.category}</p>
                     <p className="text-xs text-gray-500">Added on {new Date(item.dateAdded).toLocaleDateString()}</p>
                   </div>
                   <div className="mt-2 flex items-center justify-between">
-                    <span className="font-bold">${item.price.toFixed(2)}</span>
+                    <span className="font-bold">${item.product.price.toFixed(2)}</span>
                   </div>
                 </CardContent>
                 <CardFooter className="p-4 pt-0 flex gap-2">
-                  <Button className="flex-1 bg-black text-white" size="sm">
+                  <Button
+                    className="flex-1 bg-black text-white"
+                    size="sm"
+                    onClick={() => handleBuyNow(item.product.id)}
+                  >
                     <ShoppingCart className="h-4 w-4 mr-2" />
                     Buy Now
                   </Button>

@@ -9,108 +9,102 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Heart } from "lucide-react"
 import { Slider } from "@/components/ui/slider"
+import type { Product } from "@/lib/types"
 
 export default function SearchResults() {
   const searchParams = useSearchParams()
   const query = searchParams.get("q") || ""
 
   const [loading, setLoading] = useState(true)
-  const [results, setResults] = useState<any[]>([])
+  const [results, setResults] = useState<Product[]>([])
   const [wishlist, setWishlist] = useState<number[]>([])
+  const [error, setError] = useState<string | null>(null)
   const [filters, setFilters] = useState({
     category: "all",
     priceRange: [0, 100],
     seller: "all",
   })
 
-  // Mock data for demonstration
-  const allProducts = [
-    {
-      id: 1,
-      name: "T-Shirt",
-      price: 9.99,
-      image: "/placeholder.svg?height=400&width=300",
-      category: "Clothing",
-      seller: "Campus Threads",
-    },
-    {
-      id: 2,
-      name: "Cross Bag",
-      price: 19.99,
-      image: "/placeholder.svg?height=400&width=300",
-      category: "Accessories",
-      seller: "Style Hub",
-    },
-    {
-      id: 3,
-      name: "Jewellery Set",
-      price: 29.99,
-      image: "/placeholder.svg?height=400&width=300",
-      category: "Accessories",
-      seller: "Glam Accessories",
-    },
-    {
-      id: 4,
-      name: "Jollof Rice",
-      price: 5.99,
-      image: "/placeholder.svg?height=400&width=300",
-      category: "Food",
-      seller: "Campus Eats",
-    },
-    {
-      id: 5,
-      name: "Laptop Bag",
-      price: 24.99,
-      image: "/placeholder.svg?height=400&width=300",
-      category: "Accessories",
-      seller: "Tech Gear",
-    },
-    {
-      id: 6,
-      name: "Fried Rice",
-      price: 6.99,
-      image: "/placeholder.svg?height=400&width=300",
-      category: "Food",
-      seller: "Campus Eats",
-    },
-  ]
-
-  // Get unique categories and sellers for filters
-  const categories = ["all", ...Array.from(new Set(allProducts.map((p) => p.category)))]
-  const sellers = ["all", ...Array.from(new Set(allProducts.map((p) => p.seller)))]
+  const [categories, setCategories] = useState<string[]>(["all"])
+  const [sellers, setSellers] = useState<string[]>(["all"])
 
   useEffect(() => {
-    setLoading(true)
-
-    // Simulate API call with filtering
-    setTimeout(() => {
-      let filtered = [...allProducts]
-
-      // Filter by search query
-      if (query) {
-        filtered = filtered.filter(
-          (p) =>
-            p.name.toLowerCase().includes(query.toLowerCase()) ||
-            p.category.toLowerCase().includes(query.toLowerCase()),
-        )
+    const fetchCategories = async () => {
+      try {
+        const response = await fetch("/api/categories")
+        if (response.ok) {
+          const data = await response.json()
+          setCategories(["all", ...data.map((c: any) => c.id)])
+        }
+      } catch (err) {
+        console.error("Error fetching categories:", err)
       }
+    }
 
-      // Apply category filter
-      if (filters.category !== "all") {
-        filtered = filtered.filter((p) => p.category === filters.category)
+    const fetchSellers = async () => {
+      try {
+        // In a real app, this would be a dedicated endpoint
+        const response = await fetch("/api/products")
+        if (response.ok) {
+          const data = await response.json()
+          const uniqueSellers = ["all", ...Array.from(new Set(data.map((p: Product) => p.seller.name)))]
+          setSellers(uniqueSellers)
+        }
+      } catch (err) {
+        console.error("Error fetching sellers:", err)
       }
+    }
 
-      // Apply price range filter
-      filtered = filtered.filter((p) => p.price >= filters.priceRange[0] && p.price <= filters.priceRange[1])
+    fetchCategories()
+    fetchSellers()
+  }, [])
 
-      // Apply seller filter
-      if (filters.seller !== "all") {
-        filtered = filtered.filter((p) => p.seller === filters.seller)
+  useEffect(() => {
+    const fetchWishlist = async () => {
+      try {
+        const response = await fetch("/api/wishlist")
+
+        if (response.ok) {
+          const data = await response.json()
+          setWishlist(data.map((item: any) => item.product.id))
+        }
+      } catch (err) {
+        console.error("Error fetching wishlist:", err)
       }
+    }
 
-      setResults(filtered)
-      setLoading(false)
-    }, 500)
+    fetchWishlist()
+  }, [])
+
+  useEffect(() => {
+    const fetchSearchResults = async () => {
+      setLoading(true)
+      try {
+        // Build query string
+        const params = new URLSearchParams()
+        if (query) params.append("q", query)
+        if (filters.category !== "all") params.append("category", filters.category)
+        params.append("minPrice", filters.priceRange[0].toString())
+        params.append("maxPrice", filters.priceRange[1].toString())
+        if (filters.seller !== "all") params.append("seller", filters.seller)
+
+        const response = await fetch(`/api/products?${params.toString()}`)
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch search results")
+        }
+
+        const data = await response.json()
+        setResults(data)
+      } catch (err) {
+        setError("Error loading search results. Please try again later.")
+        console.error("Error fetching search results:", err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchSearchResults()
   }, [query, filters])
 
   const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -125,12 +119,50 @@ export default function SearchResults() {
     setFilters({ ...filters, priceRange: value })
   }
 
-  const toggleWishlist = (id: number) => {
+  const toggleWishlist = async (id: number) => {
     if (wishlist.includes(id)) {
-      setWishlist(wishlist.filter((itemId) => itemId !== id))
+      // Find the wishlist item ID
+      try {
+        const response = await fetch("/api/wishlist")
+        if (response.ok) {
+          const items = await response.json()
+          const item = items.find((i: any) => i.product.id === id)
+
+          if (item) {
+            await fetch(`/api/wishlist/${item.id}`, {
+              method: "DELETE",
+            })
+            setWishlist(wishlist.filter((itemId) => itemId !== id))
+          }
+        }
+      } catch (err) {
+        console.error("Error removing from wishlist:", err)
+      }
     } else {
-      setWishlist([...wishlist, id])
+      try {
+        await fetch("/api/wishlist", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ productId: id }),
+        })
+        setWishlist([...wishlist, id])
+      } catch (err) {
+        console.error("Error adding to wishlist:", err)
+      }
     }
+  }
+
+  if (error) {
+    return (
+      <div className="w-full py-12 text-center">
+        <p className="text-red-500">{error}</p>
+        <Button onClick={() => window.location.reload()} className="mt-4">
+          Try Again
+        </Button>
+      </div>
+    )
   }
 
   return (
@@ -154,7 +186,7 @@ export default function SearchResults() {
                 >
                   {categories.map((category) => (
                     <option key={category} value={category}>
-                      {category === "all" ? "All Categories" : category}
+                      {category === "all" ? "All Categories" : category.charAt(0).toUpperCase() + category.slice(1)}
                     </option>
                   ))}
                 </select>
@@ -227,7 +259,7 @@ export default function SearchResults() {
                             <h3 className="font-semibold">{product.name}</h3>
                           </Link>
                           <p className="text-sm">{product.category}</p>
-                          <p className="text-xs text-gray-500">{product.seller}</p>
+                          <p className="text-xs text-gray-500">{product.seller.name}</p>
                         </div>
                         <button
                           onClick={() => toggleWishlist(product.id)}
