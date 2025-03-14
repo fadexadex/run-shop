@@ -31,9 +31,22 @@ export class ProductRepository {
       where: {
         id,
       },
+      include: {
+        category: {
+          select: {
+            name: true,
+          },
+        },
+        seller: {
+          select:{
+            id: true,
+            catalogueName: true,
+          }
+        },
+      },
     });
   };
-  
+
   searchProducts = async (query: string) => {
     return await prisma.product.findMany({
       where: {
@@ -44,5 +57,4 @@ export class ProductRepository {
       },
     });
   };
-
 }
