@@ -46,7 +46,7 @@ export default function HeroSection() {
               </Link>
             </div>
 
-            <div className="mt-8 grid grid-cols-3 gap-4">
+            {/* <div className="mt-8 grid grid-cols-3 gap-4">
               <div className="bg-black/20 backdrop-blur-sm p-3 rounded-lg text-center">
                 <p className="text-2xl font-bold">100+</p>
                 <p className="text-sm">Campus Sellers</p>
@@ -59,7 +59,7 @@ export default function HeroSection() {
                 <p className="text-2xl font-bold">24/7</p>
                 <p className="text-sm">Support</p>
               </div>
-            </div>
+            </div> */}
           </div>
 
           <div className="hidden md:block relative">

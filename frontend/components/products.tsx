@@ -155,7 +155,7 @@ export default function Products() {
                   </button>
                 </div>
                 <div className="mt-2 flex items-center justify-between">
-                  <span className="font-bold">${Number.parseFloat(product.price).toFixed(2)}</span>
+                  <span className="font-bold">₦{Number.parseFloat(product.price).toFixed(2)}</span>
                 </div>
               </CardContent>
               <CardFooter className="p-4 pt-0">

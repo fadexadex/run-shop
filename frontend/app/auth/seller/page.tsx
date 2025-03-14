@@ -54,21 +54,19 @@ export default function SellerAuthPage() {
 
   // Check if user is already logged in and redirect accordingly
   useEffect(() => {
-    if (user) {
-      if (user.role === "SELLER") {
-        // If seller registration is not completed, redirect to onboarding
-        if (!user.sellerCompleted) {
-          router.push("/seller/onboarding")
-        } else {
-          // If seller registration is completed, redirect to dashboard
-          router.push("/seller/dashboard")
-        }
+    if (user && !isLoading) {
+      console.log("User already logged in:", user)
+
+      // If sellerCompleted is false, redirect to onboarding
+      // This is because they're in the seller auth section
+      if (!user.sellerCompleted) {
+        router.push("/seller/onboarding")
       } else {
-        // If user is not a seller, redirect to account page
-        router.push("/account")
+        // If sellerCompleted is true, redirect to dashboard
+        router.push("/seller/dashboard")
       }
     }
-  }, [user, router])
+  }, [user, isLoading, router])
 
   const handleLoginChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
@@ -98,6 +96,7 @@ export default function SellerAuthPage() {
     }
   }
 
+  // Update the login submit handler to properly redirect based on sellerCompleted
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
@@ -113,8 +112,20 @@ export default function SellerAuthPage() {
     setIsLoading(true)
 
     try {
-      await login(loginData.email, loginData.password)
-      // Redirect will happen in the useEffect based on user state
+      const userData = await login(loginData.email, loginData.password)
+      console.log("Login successful, user data:", userData)
+
+      // Add a small delay to ensure user data is loaded
+      setTimeout(() => {
+        // Since we're in the seller auth section, check sellerCompleted
+        if (!userData.sellerCompleted) {
+          // If sellerCompleted is false, redirect to onboarding
+          router.push("/seller/onboarding")
+        } else {
+          // If sellerCompleted is true, redirect to dashboard
+          router.push("/seller/dashboard")
+        }
+      }, 500)
     } catch (err: any) {
       setError(err.message || "Login failed. Please check your credentials.")
     } finally {
@@ -137,7 +148,7 @@ export default function SellerAuthPage() {
     setIsLoading(true)
 
     try {
-      // Register with SELLER role
+      // Register with CUSTOMER role (all users start as CUSTOMER)
       await register({
         firstName: registerData.firstName,
         lastName: registerData.lastName,
@@ -146,13 +157,13 @@ export default function SellerAuthPage() {
         hostelName: registerData.hostelName,
         blockNumber: Number.parseInt(registerData.blockNumber),
         roomNo: Number.parseInt(registerData.roomNo),
-        role: "SELLER", // Register directly as a SELLER
+        role: "CUSTOMER", // All users start as CUSTOMER
       })
 
       // Show success message
       setSuccess("Registration successful! Redirecting to seller onboarding...")
 
-      // Redirect to seller onboarding after a short delay
+      // Since we're in the seller auth section, redirect to onboarding
       setTimeout(() => {
         router.push("/seller/onboarding")
       }, 1500)
