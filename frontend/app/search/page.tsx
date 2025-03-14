@@ -21,6 +21,14 @@ interface Product {
   categoryId: string
 }
 
+// Helper function to create a slug from product name
+const createSlug = (name: string) => {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "")
+}
+
 export default function SearchResults() {
   const searchParams = useSearchParams()
   const query = searchParams.get("q") || ""
@@ -212,7 +220,7 @@ export default function SearchResults() {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {results.map((product) => (
                   <Card key={product.id} className="overflow-hidden rounded-lg border">
-                    <Link href={`/product/${product.id}`}>
+                    <Link href={`/product/${createSlug(product.name)}`}>
                       <div className="relative overflow-hidden">
                         <img
                           src={
@@ -228,7 +236,7 @@ export default function SearchResults() {
                     <CardContent className="p-4">
                       <div className="flex justify-between items-start">
                         <div className="space-y-1">
-                          <Link href={`/product/${product.id}`} className="hover:underline">
+                          <Link href={`/product/${createSlug(product.name)}`} className="hover:underline">
                             <h3 className="font-semibold">{product.name}</h3>
                           </Link>
                           <p className="text-sm">Category ID: {product.categoryId}</p>
@@ -247,7 +255,7 @@ export default function SearchResults() {
                       </div>
                     </CardContent>
                     <CardFooter className="p-4 pt-0">
-                      <Link href={`/product/${product.id}`} className="w-full">
+                      <Link href={`/product/${createSlug(product.name)}`} className="w-full">
                         <Button className="w-full bg-black text-white" size="sm">
                           View Details
                         </Button>

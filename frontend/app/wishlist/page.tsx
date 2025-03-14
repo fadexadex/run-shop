@@ -18,6 +18,14 @@ interface WishlistProduct {
   }
 }
 
+// Helper function to create a slug from product name
+const createSlug = (name: string) => {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "")
+}
+
 export default function Wishlist() {
   const [loading, setLoading] = useState(true)
   const [wishlistItems, setWishlistItems] = useState<WishlistProduct[]>([])
@@ -115,7 +123,7 @@ export default function Wishlist() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {wishlistItems.map((item) => (
               <Card key={item.id} className="overflow-hidden rounded-lg border">
-                <Link href={`/product/${item.product.id}`}>
+                <Link href={`/product/${createSlug(item.product.name)}`}>
                   <div className="relative overflow-hidden">
                     <img
                       src={item.product.image || "/placeholder.svg"}
@@ -126,7 +134,7 @@ export default function Wishlist() {
                 </Link>
                 <CardContent className="p-4">
                   <div className="space-y-1">
-                    <Link href={`/product/${item.product.id}`} className="hover:underline">
+                    <Link href={`/product/${createSlug(item.product.name)}`} className="hover:underline">
                       <h3 className="font-semibold">{item.product.name}</h3>
                     </Link>
                     <p className="text-sm">{item.product.category}</p>

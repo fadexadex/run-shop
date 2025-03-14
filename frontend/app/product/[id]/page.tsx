@@ -221,7 +221,7 @@ export default function ProductDetails() {
             <div className="flex justify-between items-start">
               <div>
                 <h1 className="text-3xl font-bold mb-2">{product.name}</h1>
-                <p className="text-sm text-gray-500 mb-4">Category ID: {product.categoryId}</p>
+                <p className="text-sm text-gray-500 mb-4">Category: {product.category.name}</p>
               </div>
               <button
                 onClick={toggleWishlist}
@@ -239,7 +239,7 @@ export default function ProductDetails() {
             <div className="mb-6 p-4 bg-gray-50 rounded-lg">
               <div className="flex items-center gap-2 mb-2">
                 <h3 className="font-semibold">Seller ID:</h3>
-                <span>{product.sellerId}</span>
+                <span>{product.seller.catalogueName}</span>
               </div>
             </div>
 

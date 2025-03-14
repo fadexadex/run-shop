@@ -6,6 +6,14 @@ import { Button } from "./ui/button"
 import { Card, CardContent, CardFooter } from "./ui/card"
 import { Slider } from "./ui/slider"
 
+// Helper function to create a slug from product name
+const createSlug = (name) => {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "")
+}
+
 export default function SearchResults() {
   const location = useLocation()
   const searchParams = new URLSearchParams(location.search)
@@ -199,7 +207,7 @@ export default function SearchResults() {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {results.map((product) => (
                   <Card key={product.id} className="overflow-hidden rounded-lg border">
-                    <Link to={`/product/${product.id}`}>
+                    <Link to={`/product/${createSlug(product.name)}`}>
                       <div className="relative overflow-hidden">
                         <img
                           src={product.image || "/placeholder.svg"}
@@ -210,7 +218,7 @@ export default function SearchResults() {
                     </Link>
                     <CardContent className="p-4">
                       <div className="space-y-1">
-                        <Link to={`/product/${product.id}`} className="hover:underline">
+                        <Link to={`/product/${createSlug(product.name)}`} className="hover:underline">
                           <h3 className="font-semibold">{product.name}</h3>
                         </Link>
                         <p className="text-sm">{product.category}</p>
