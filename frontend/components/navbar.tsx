@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Search, Heart, User, Menu, X, ShoppingBag } from "lucide-react"
@@ -19,6 +19,7 @@ export default function Navbar() {
   const router = useRouter()
   const debouncedSearch = useDebounce(searchQuery, 300)
   const { user } = useAuth()
+  const searchRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (debouncedSearch.trim().length > 0) {
@@ -28,6 +29,20 @@ export default function Navbar() {
       setSuggestions([])
     }
   }, [debouncedSearch])
+
+  useEffect(() => {
+    // Close suggestions when clicking outside
+    function handleClickOutside(event: MouseEvent) {
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+        setShowSuggestions(false)
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside)
+    }
+  }, [])
 
   const fetchSearchSuggestions = async (query: string) => {
     if (query.length < 2) return
@@ -92,17 +107,20 @@ export default function Navbar() {
         </nav>
 
         {/* Search Bar */}
-        <form onSubmit={handleSearch} className="hidden md:flex items-center relative flex-1 max-w-sm mx-4">
-          <Search className="absolute left-3 h-4 w-4 text-gray-400" />
-          <input
-            type="search"
-            placeholder="Search products..."
-            className="w-full py-2 pl-10 pr-4 text-sm bg-gray-100 rounded-full focus:outline-none focus:ring-1 focus:ring-black"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            onFocus={() => searchQuery.trim() && setShowSuggestions(true)}
-            onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-          />
+        <div ref={searchRef} className="hidden md:flex items-center relative flex-1 max-w-sm mx-4">
+          <form onSubmit={handleSearch} className="w-full">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <input
+                type="search"
+                placeholder="Search for products, sellers..."
+                className="w-full py-2 pl-10 pr-4 text-sm bg-gray-100 rounded-full focus:outline-none focus:ring-1 focus:ring-black"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onFocus={() => searchQuery.trim() && setShowSuggestions(true)}
+              />
+            </div>
+          </form>
 
           {/* Search Suggestions */}
           {showSuggestions && (
@@ -125,7 +143,7 @@ export default function Navbar() {
               )}
             </div>
           )}
-        </form>
+        </div>
 
         {/* Desktop Action Icons */}
         <div className="hidden md:flex items-center gap-4">

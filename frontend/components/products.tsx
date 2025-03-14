@@ -19,6 +19,14 @@ interface Product {
   }
 }
 
+// Helper function to create a slug from product name
+const createSlug = (name: string) => {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "")
+}
+
 export default function Products() {
   const [products, setProducts] = useState<Product[]>([])
   const [wishlist, setWishlist] = useState<string[]>([])
@@ -115,7 +123,7 @@ export default function Products() {
         <div className="mx-auto grid max-w-7xl grid-cols-1 gap-6 py-12 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
           {products.map((product) => (
             <Card key={product.id} className="overflow-hidden rounded-lg border">
-              <Link href={`/product/${product.id}`}>
+              <Link href={`/product/${createSlug(product.name)}`}>
                 <div className="relative overflow-hidden">
                   <img
                     src={
@@ -133,7 +141,7 @@ export default function Products() {
               <CardContent className="p-4">
                 <div className="flex justify-between items-start">
                   <div className="space-y-1">
-                    <Link href={`/product/${product.id}`} className="hover:underline">
+                    <Link href={`/product/${createSlug(product.name)}`} className="hover:underline">
                       <h3 className="font-semibold tracking-tight">{product.name}</h3>
                     </Link>
                     <p className="text-sm">{product.category?.name || "Uncategorized"}</p>
@@ -151,7 +159,7 @@ export default function Products() {
                 </div>
               </CardContent>
               <CardFooter className="p-4 pt-0">
-                <Link href={`/product/${product.id}`} className="w-full">
+                <Link href={`/product/${createSlug(product.name)}`} className="w-full">
                   <Button className="w-full bg-black text-white" size="sm">
                     View Details
                   </Button>
