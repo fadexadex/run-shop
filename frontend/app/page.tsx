@@ -1,16 +1,20 @@
 import HeroSection from "@/components/hero-section"
-import Carousel from "@/components/carousel"
-import Categories from "@/components/categories"
-import Products from "@/components/products"
+import FeaturedCategories from "@/components/featured-categories"
+import TrendingProducts from "@/components/trending-products"
+import SellerCTA from "@/components/seller-cta"
+import Testimonials from "@/components/testimonials"
+import Newsletter from "@/components/newsletter"
 
 export default function Home() {
   return (
-    <>
+    <main className="min-h-screen">
       <HeroSection />
-      <Carousel />
-      <Categories />
-      <Products />
-    </>
+      <FeaturedCategories />
+      <TrendingProducts />
+      <SellerCTA />
+      <Testimonials />
+      <Newsletter />
+    </main>
   )
 }
 

@@ -4,44 +4,50 @@ import type React from "react"
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { Search, Heart, User, Menu, X } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { Search, Heart, User, Menu, X, ShoppingBag } from "lucide-react"
 import { useDebounce } from "@/hooks/use-debounce"
 import { useAuth } from "@/lib/auth-context"
-
-// Mock data for search suggestions
-const searchSuggestions = [
-  { id: 1, name: "T-Shirt", category: "Clothing" },
-  { id: 2, name: "Cross Bag", category: "Accessories" },
-  { id: 3, name: "Jewellery Set", category: "Accessories" },
-  { id: 4, name: "Jollof Rice", category: "Food" },
-  { id: 5, name: "Laptop Bag", category: "Accessories" },
-  { id: 6, name: "Fried Rice", category: "Food" },
-]
+import { Button } from "@/components/ui/button"
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [suggestions, setSuggestions] = useState<any[]>([])
+  const [isSearching, setIsSearching] = useState(false)
   const router = useRouter()
   const debouncedSearch = useDebounce(searchQuery, 300)
   const { user } = useAuth()
 
   useEffect(() => {
     if (debouncedSearch.trim().length > 0) {
-      // Filter suggestions based on search query
-      const filtered = searchSuggestions.filter(
-        (item) =>
-          item.name.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-          item.category.toLowerCase().includes(debouncedSearch.toLowerCase()),
-      )
-      setSuggestions(filtered)
-      setShowSuggestions(true)
+      fetchSearchSuggestions(debouncedSearch)
     } else {
       setShowSuggestions(false)
+      setSuggestions([])
     }
   }, [debouncedSearch])
+
+  const fetchSearchSuggestions = async (query: string) => {
+    if (query.length < 2) return
+
+    setIsSearching(true)
+    try {
+      // Use the search API endpoint
+      const response = await fetch(`http://localhost:6160/api/v1/products/search?q=${encodeURIComponent(query)}`)
+
+      if (response.ok) {
+        const data = await response.json()
+        setSuggestions(data.data || [])
+        setShowSuggestions(true)
+      }
+    } catch (error) {
+      console.error("Error fetching search suggestions:", error)
+    } finally {
+      setIsSearching(false)
+    }
+  }
 
   const toggleMenu = () => {
     setIsOpen(!isOpen)
@@ -55,7 +61,7 @@ export default function Navbar() {
     }
   }
 
-  const handleSuggestionClick = (id: number) => {
+  const handleSuggestionClick = (id: string) => {
     router.push(`/product/${id}`)
     setSearchQuery("")
     setShowSuggestions(false)
@@ -65,6 +71,7 @@ export default function Navbar() {
     <header className="sticky top-0 z-50 w-full bg-white border-b border-gray-200">
       <div className="container mx-auto flex items-center justify-between h-16 px-4 md:px-6">
         <Link href="/" className="flex items-center gap-2 text-xl font-bold">
+          <ShoppingBag className="h-6 w-6" />
           <span>RUNShop</span>
         </Link>
 
@@ -76,8 +83,8 @@ export default function Navbar() {
           <Link href="/category/clothing" className="font-medium transition-colors hover:text-primary">
             Clothing
           </Link>
-          <Link href="/category/accessories" className="font-medium transition-colors hover:text-primary">
-            Accessories
+          <Link href="/category/electronics" className="font-medium transition-colors hover:text-primary">
+            Electronics
           </Link>
           <Link href="/category/food" className="font-medium transition-colors hover:text-primary">
             Food
@@ -98,18 +105,24 @@ export default function Navbar() {
           />
 
           {/* Search Suggestions */}
-          {showSuggestions && suggestions.length > 0 && (
+          {showSuggestions && (
             <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-50 max-h-60 overflow-auto">
-              {suggestions.map((item) => (
-                <div
-                  key={item.id}
-                  className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                  onClick={() => handleSuggestionClick(item.id)}
-                >
-                  <div className="font-medium">{item.name}</div>
-                  <div className="text-xs text-gray-500">{item.category}</div>
-                </div>
-              ))}
+              {isSearching ? (
+                <div className="px-4 py-2 text-center text-sm text-gray-500">Searching...</div>
+              ) : suggestions.length > 0 ? (
+                suggestions.map((item) => (
+                  <div
+                    key={item.id}
+                    className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                    onClick={() => handleSuggestionClick(item.id)}
+                  >
+                    <div className="font-medium">{item.name}</div>
+                    <div className="text-xs text-gray-500">${item.price}</div>
+                  </div>
+                ))
+              ) : (
+                <div className="px-4 py-2 text-center text-sm text-gray-500">No products found</div>
+              )}
             </div>
           )}
         </form>
@@ -119,9 +132,24 @@ export default function Navbar() {
           <Link href="/wishlist" className="p-2 rounded-full hover:bg-gray-100">
             <Heart className="h-5 w-5" />
           </Link>
-          <Link href={user ? "/account" : "/login"} className="p-2 rounded-full hover:bg-gray-100">
-            <User className="h-5 w-5" />
-          </Link>
+          {user ? (
+            <Link href="/account" className="p-2 rounded-full hover:bg-gray-100">
+              <User className="h-5 w-5" />
+            </Link>
+          ) : (
+            <Link href="/auth?mode=login">
+              <Button variant="outline" size="sm">
+                Log In
+              </Button>
+            </Link>
+          )}
+          {user?.role === "SELLER" && (
+            <Link href="/seller/dashboard">
+              <Button size="sm" className="bg-black text-white">
+                Seller Dashboard
+              </Button>
+            </Link>
+          )}
         </div>
 
         {/* Mobile Menu Button */}
@@ -151,8 +179,8 @@ export default function Navbar() {
               <Link href="/category/clothing" className="font-medium py-2 hover:text-primary">
                 Clothing
               </Link>
-              <Link href="/category/accessories" className="font-medium py-2 hover:text-primary">
-                Accessories
+              <Link href="/category/electronics" className="font-medium py-2 hover:text-primary">
+                Electronics
               </Link>
               <Link href="/category/food" className="font-medium py-2 hover:text-primary">
                 Food
@@ -162,10 +190,25 @@ export default function Navbar() {
                   <Heart className="h-5 w-5" />
                   <span>Wishlist</span>
                 </Link>
-                <Link href={user ? "/account" : "/login"} className="flex items-center gap-2 py-2 hover:text-primary">
-                  <User className="h-5 w-5" />
-                  <span>{user ? "My Account" : "Log In"}</span>
-                </Link>
+                {user ? (
+                  <>
+                    <Link href="/account" className="flex items-center gap-2 py-2 hover:text-primary">
+                      <User className="h-5 w-5" />
+                      <span>My Account</span>
+                    </Link>
+                    {user.role === "SELLER" && (
+                      <Link href="/seller/dashboard" className="flex items-center gap-2 py-2 hover:text-primary">
+                        <ShoppingBag className="h-5 w-5" />
+                        <span>Seller Dashboard</span>
+                      </Link>
+                    )}
+                  </>
+                ) : (
+                  <Link href="/auth?mode=login" className="flex items-center gap-2 py-2 hover:text-primary">
+                    <User className="h-5 w-5" />
+                    <span>Log In</span>
+                  </Link>
+                )}
               </div>
             </nav>
           </div>
