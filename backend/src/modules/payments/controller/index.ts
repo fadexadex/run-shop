@@ -31,10 +31,6 @@ export class PaymentController {
       const { transaction_ref, metadata } = req.body;
 
       await paymentService.handleWebHook(transaction_ref, metadata);
-
-      res.status(StatusCodes.OK).json({
-        message: "Webhook processed successfully",
-      });
     } catch (error) {
       next(error);
     }
