@@ -112,7 +112,7 @@ model Order {
   escrowStatus  EscrowStatus  @default(HELD)
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
-    hostelName      String
+  hostelName      String
   blockNumber     Int
   roomNo          Int
 

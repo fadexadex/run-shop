@@ -87,4 +87,8 @@ export class OrderRepository {
       },
     });
   }
+
+  async createTransaction(data: Prisma.TransactionCreateInput) {
+    
+  }
 }

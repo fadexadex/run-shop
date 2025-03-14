@@ -12,9 +12,17 @@ export class SellerRepository {
         role: "SELLER",
       },
     });
-    return prisma.seller.create({
+    const seller =  await prisma.seller.create({
       data,
     });
+    await prisma.wallet.create({
+      data: {
+        sellerId: seller.id, 
+        balance: 0.0, 
+        totalEarned: 0.0, 
+      },
+    });
+    return seller;
   }
 
   async findSellerById(sellerId: string) {
@@ -58,6 +66,27 @@ export class SellerRepository {
       },
     });
   }
+
+  async getSellerAndWallet(orderId: string) {
+    return prisma.seller.findFirst({
+      where: {
+        orders: {
+          some: {
+            id: orderId,
+          },
+        },
+      },
+      include: {
+        wallet: {
+          select: {
+            id: true, 
+          },
+        },
+      },
+    });
+  }
+
+  async createTransaction(data: Prisma.TransactionCreateInput) {}
 
   updateProduct = async (id: string, data: IUpdateProduct) => {
     const { categoryId, ...productData } = data;

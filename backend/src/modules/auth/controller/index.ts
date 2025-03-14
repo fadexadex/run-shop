@@ -33,10 +33,10 @@ export class AuthController {
   getMe = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const user = await authService.getMe(req.user.email);
-      const { password, ...rest } = user;
+      const { password, ...data } = user;
 
       res.status(StatusCodes.OK).json({
-        rest,
+        data,
       });
     } catch (error) {
       next(error);

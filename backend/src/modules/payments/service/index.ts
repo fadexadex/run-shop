@@ -2,11 +2,12 @@ import axios from "axios";
 import { PaymentResponse } from "../../../utils/types";
 import { AppError } from "../../../middlewares";
 import { OrderRepository } from "../../../modules/order/repository";
+import { SellerRepository } from "../../../modules/seller/repository";
 
 const SQUAD_URL = "https://sandbox-api-d.squadco.com/transaction/initiate";
 const SECRET_KEY = "Bearer sandbox_sk_88fa854e4afb46efcf8fb9e5090458d75ac50640be83";
 
-const orderRepository = new OrderRepository();
+const sellerRepository = new SellerRepository();
 
 export class PaymentService {
   initiatePayment = async (
@@ -40,6 +41,8 @@ export class PaymentService {
         console.log(
           `Transaction initiated: ${transaction_ref}, Order ID: ${orderId}`
         );
+        const seller = await sellerRepository.getSellerAndWallet(orderId);
+
 
         return { checkoutUrl: checkout_url, transactionRef: transaction_ref };
       } else {
@@ -51,17 +54,16 @@ export class PaymentService {
     }
   };
 
-  handleWebHook = async (
-    transaction_ref: string,
-    meta: { order_id: string }
-  ) => {
-    if (!transaction_ref || !meta?.order_id) {
-      console.error("Invalid webhook data received");
-      throw new AppError("Invalid webhook data received", 400);
-    }
+  // handleWebHook = async (
+  //   transaction_ref: string,
+  // ) => {
+  //   if (!transaction_ref || !meta?.order_id) {
+  //     console.error("Invalid webhook data received");
+  //     throw new AppError("Invalid webhook data received", 400);
+  //   }
 
-    const orderId = meta.order_id;
-    await orderRepository.updateOrderStatus(orderId, "CONFIRMED");
-    console.log(`Order ${orderId} confirmed successfully`);
-  };
+  //   const orderId = meta.order_id;
+  //   await orderRepository.updateOrderStatus(orderId, "CONFIRMED");
+  //   console.log(`Order ${orderId} confirmed successfully`);
+  // };
 }

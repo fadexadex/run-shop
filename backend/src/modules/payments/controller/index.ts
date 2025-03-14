@@ -25,14 +25,14 @@ export class PaymentController {
     }
   }
 
-  async handleWebHook(req: Request, res: Response, next: NextFunction) {
-    try {
-      console.log(req.body);
-      const { transaction_ref, metadata } = req.body;
+  // async handleWebHook(req: Request, res: Response, next: NextFunction) {
+  //   try {
+  //     console.log(req.body);
+  //     const { Body:{transaction_ref} } = req.body;
 
-      await paymentService.handleWebHook(transaction_ref, metadata);
-    } catch (error) {
-      next(error);
-    }
-  }
+  //     await paymentService.handleWebHook(transaction_ref);
+  //   } catch (error) {
+  //     next(error);
+  //   }
+  // }
 }
