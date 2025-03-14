@@ -44,4 +44,16 @@ export class ProductController {
       next(error);
     }
   };
+
+  searchProducts = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const query = req.query.q as string;
+      const products = await productService.searchProducts(query);
+      res.status(StatusCodes.OK).json({
+        data: products,
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
 }

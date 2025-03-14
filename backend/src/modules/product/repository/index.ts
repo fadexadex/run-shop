@@ -1,9 +1,13 @@
 import { Prisma, PrismaClient } from "@prisma/client";
-import {  IUpdateProduct, ProductFilters } from "utils/types";
+import { IUpdateProduct, ProductFilters } from "utils/types";
 import { prisma } from "../../../utils/db";
 
 export class ProductRepository {
-  getAllProducts = async (skip: number, take: number, filters: ProductFilters) => {
+  getAllProducts = async (
+    skip: number,
+    take: number,
+    filters: ProductFilters
+  ) => {
     const [products, count] = await Promise.all([
       prisma.product.findMany({
         skip,
@@ -14,8 +18,7 @@ export class ProductRepository {
         include: {
           category: true,
         },
-        where: filters
-        
+        where: filters,
       }),
       prisma.product.count(),
     ]);
@@ -30,9 +33,16 @@ export class ProductRepository {
       },
     });
   };
-  searchProducts = async(query: string)=>{
-    
-  }
-
+  
+  searchProducts = async (query: string) => {
+    return await prisma.product.findMany({
+      where: {
+        OR: [
+          { name: { contains: query, mode: "insensitive" } },
+          { description: { contains: query, mode: "insensitive" } },
+        ],
+      },
+    });
+  };
 
 }

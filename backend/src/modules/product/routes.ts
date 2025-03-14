@@ -15,6 +15,7 @@ router.get(
 );
 
 //search products
+router.get("/search", productController.searchProducts);
 
 router.get(
   "/:id",

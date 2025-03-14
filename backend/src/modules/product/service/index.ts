@@ -27,5 +27,9 @@ export class ProductService {
     return productRepository.getProductById(id);
   };
 
+  searchProducts = async (query: string) => {
+    return productRepository.searchProducts(query);
+  };
+
 
 }
