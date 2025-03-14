@@ -88,7 +88,15 @@ export class OrderRepository {
     });
   }
 
+  async getSellerOrders(sellerId: string) {
+    return await prisma.order.findMany({
+      where: {
+        sellerId,
+  
+      },
+    });
+  }
   async createTransaction(data: Prisma.TransactionCreateInput) {
-    
+
   }
 }

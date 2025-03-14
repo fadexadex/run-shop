@@ -3,70 +3,70 @@ import { PaymentResponse } from "../../../utils/types";
 import { AppError } from "../../../middlewares";
 import { OrderRepository } from "../../../modules/order/repository";
 import { SellerRepository } from "../../../modules/seller/repository";
+import { any } from "joi";
 
 const SQUAD_URL = "https://sandbox-api-d.squadco.com/transaction/initiate";
-const SECRET_KEY = "Bearer sandbox_sk_88fa854e4afb46efcf8fb9e5090458d75ac50640be83";
+const SECRET_KEY =
+  "Bearer sandbox_sk_88fa854e4afb46efcf8fb9e5090458d75ac50640be83";
 
 const sellerRepository = new SellerRepository();
 
 export class PaymentService {
-initiatePayment = async (
-  email: string,
-  name: string,
-  amount: number,
-  orderId: string
-): Promise<PaymentResponse> => {
-  try {
-    const headers = {
-      Authorization: SECRET_KEY,
-      "Content-Type": "application/json",
-    };
+  initiatePayment = async (
+    email: string,
+    name: string,
+    amount: number,
+    orderId: string
+  ): Promise<PaymentResponse> => {
+    try {
+      const headers = {
+        Authorization: SECRET_KEY,
+        "Content-Type": "application/json",
+      };
 
-    const payload = {
-      email,
-      amount: amount * 100,
-      currency: "NGN",
-      customer_name: name,
-      initiate_type: "inline",
-      transaction_ref: `TRX_${Date.now()}`,
-      callback_url: "https://payment-success-check",
-      payment_channels: ["card", "bank", "ussd", "transfer"],
-      metadata: { order_id: orderId },
-    };
+      const payload = {
+        email,
+        amount: amount * 100,
+        currency: "NGN",
+        customer_name: name,
+        initiate_type: "inline",
+        transaction_ref: `TRX_${Date.now()}`,
+        callback_url: "https://payment-success-check",
+        payment_channels: ["card", "bank", "ussd", "transfer"],
+        metadata: { order_id: orderId },
+      };
 
-    const { data } = await axios.post(SQUAD_URL, payload, { headers });
+      const { data } = await axios.post(SQUAD_URL, payload, { headers });
 
-    if (data.status === 200) {
-      const { checkout_url, transaction_ref } = data.data;
-      console.log(
-        `Transaction initiated: ${transaction_ref}, Order ID: ${orderId}`
-      );
+      if (data.status === 200) {
+        const { checkout_url, transaction_ref } = data.data;
+        console.log(
+          `Transaction initiated: ${transaction_ref}, Order ID: ${orderId}`
+        );
 
-      // Fetch the seller and wallet details
-      const seller = await sellerRepository.getSellerAndWallet(orderId);
-      if (!seller || !seller.wallet) {
-        throw new AppError("Seller or wallet not found for the order", 404);
+        const seller = await sellerRepository.getSellerAndWallet(orderId);
+        if (!seller || !seller.wallet) {
+          throw new AppError("Seller or wallet not found for the order", 404);
+        }
+
+        await sellerRepository.createTransaction({
+          walletId: seller.wallet.id,
+          orderId,
+          amount,
+          transactionType: "DEBIT", 
+          status: "PENDING", 
+          id: transaction_ref,
+        } as any);
+
+        return { checkoutUrl: checkout_url, transactionRef: transaction_ref };
+      } else {
+        throw new AppError("Failed to initiate transaction", 500);
       }
-
-      // Create a transaction record
-      // await sellerRepository.createTransaction({
-      //   walletId: seller.wallet.id,
-      //   orderId,
-      //   amount,
-      //   transactionType: "DEBIT", // Assuming this is a debit transaction
-      //   status: "PENDING", // Initial status of the transaction
-      //   id: transaction_ref, // Use the transaction_ref as the transaction ID
-      // });
-
-      return { checkoutUrl: checkout_url, transactionRef: transaction_ref };
-    } else {
-      throw new AppError("Failed to initiate transaction", 500);
+    } catch (error: any) {
+      console.error("Error initiating payment:", error.message);
+      throw error;
     }
-  } catch (error: any) {
-    console.error("Error initiating payment:", error.message);
-    throw error;
-  }
-};
+  };
 
   // handleWebHook = async (
   //   transaction_ref: string,

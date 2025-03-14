@@ -44,6 +44,7 @@ export class AuthController {
         hostelName: user.hostelName,
         blockNumber: user.blockNumber,
         roomNo: user.roomNo,
+        seller: user.seller,
         sellerCompleted: !!user.seller, // Add sellerCompleted based on whether the user has a seller profile
       });
     } catch (error) {

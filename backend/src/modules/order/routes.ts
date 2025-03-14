@@ -8,6 +8,6 @@ const router = Router();
 
 router.post("/create", authGuard, validateOrder, orderController.createOrder);
 
-
+router.get("/:id/seller", authGuard, orderController.getSellerOrders);
 
 export default router;
