@@ -8,6 +8,7 @@ import categoryRoutes from "./modules/category/routes";
 import productRoutes from "./modules/product/routes";
 import wishListRoutes from "./modules/wish-list/routes";
 import orderRoutes from "./modules/order/routes";
+import paymentRoutes from "./modules/payments/routes";
 import cors from "cors";
 
 dotenv.config();
@@ -38,6 +39,7 @@ export class Server {
     this.apiRouter.use("/products", productRoutes);
     this.apiRouter.use("/orders", orderRoutes);
     this.apiRouter.use("/wish-lists", wishListRoutes);
+    this.apiRouter.use("/payments", paymentRoutes);
     this.app.use("/api/v1", this.apiRouter);
     this.app.use(errorHandler);
   }

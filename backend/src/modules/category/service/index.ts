@@ -8,6 +8,10 @@ export class CategoryService {
     return categoryRepository.createCategory(data);
   };
 
+  getOnlyCategories = async () => {
+    return categoryRepository.getOnlyCategories();
+  };
+
   getAllCategories = async () => {
     return categoryRepository.getAllCategories();
   };

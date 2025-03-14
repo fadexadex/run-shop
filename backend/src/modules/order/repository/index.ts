@@ -1,12 +1,12 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "../../../utils/db";
-import { ICreateOrder } from "utils/types";
+import { ICreateOrder } from "../../../utils/types";
+import { IOrderStatus } from "../../../utils/types";
 
 export class OrderRepository {
   async createOrder(data: ICreateOrder) {
     const { userId, sellerId, items, ...orderData } = data;
 
-    // Step 1: Fetch all products in a single query **before** starting the transaction
     const productIds = items.map((item) => item.productId);
     const products = await prisma.product.findMany({
       where: { id: { in: productIds } },
@@ -61,7 +61,7 @@ export class OrderRepository {
                     select: {
                       user: {
                         select: {
-                          email: true, // Only fetch seller's email
+                          email: true, 
                         },
                       },
                     },
@@ -74,6 +74,17 @@ export class OrderRepository {
       });
 
       return order;
+    });
+  }
+
+  async updateOrderStatus(id: string, orderStatus: IOrderStatus) {
+    return await prisma.order.update({
+      where: {
+        id,
+      },
+      data: {
+        orderStatus,
+      },
     });
   }
 }

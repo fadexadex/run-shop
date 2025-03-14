@@ -1,52 +1,67 @@
 import axios from "axios";
+import { PaymentResponse } from "../../../utils/types";
+import { AppError } from "../../../middlewares";
+import { OrderRepository } from "../../../modules/order/repository";
 
-const createPaymentLink = async (orderId: string, amount: number, email: string) => {
-  try {
-    const API_KEY = "YOUR_SQUAD_SECRET_KEY"; // Replace with actual Squad secret key
-    const API_URL = "https://api.squadco.com/merchant/payment-link"; // Confirm the correct endpoint
-    const BASE_PAYMENT_URL = "https://sandbox-pay.squadco.com/"; // Change for live environment if needed
+const SQUAD_URL = "https://sandbox-api-d.squadco.com/transaction/initiate";
+const SECRET_KEY = "Bearer sandbox_sk_88fa854e4afb46efcf8fb9e5090458d75ac50640be83";
 
-    const hash = `order-${orderId}`; // Unique hash for the order
+const orderRepository = new OrderRepository();
 
-    const payload = {
-      name: "Order Payment",  
-      hash, // Custom hash used for generating the payment link
-      link_status: 1,
-      expire_by: new Date(Date.now() + 10 * 60 * 1000).toISOString(), // Expires in 10 minutes
-      amounts: [
-        {
-          amount, 
-          currency_id: "NGN",
-        },
-      ],
-      description: `Payment for Order ${orderId}`,
-      redirect_link: "https://yourwebsite.com/payment-success", 
-      return_msg: "Successful",
-      metadata: {
-        orderId,
-        customer_email: email,
-      },
-    };
+export class PaymentService {
+  initiatePayment = async (
+    email: string,
+    name: string,
+    amount: number,
+    orderId: string
+  ): Promise<PaymentResponse> => {
+    try {
+      const headers = {
+        Authorization: SECRET_KEY,
+        "Content-Type": "application/json",
+      };
 
-    const headers = {
-      Authorization: `Bearer ${API_KEY}`,
-      "Content-Type": "application/json",
-    };
+      const payload = {
+        email,
+        amount: amount * 100, 
+        currency: "NGN",
+        customer_name: name,
+        initiate_type: "inline",
+        transaction_ref: `TRX_${Date.now()}`,
+        callback_url: "https://payment-success-check",
+        payment_channels: ["card", "bank", "ussd", "transfer"],
+        metadata: { order_id: orderId },
+      };
 
-    const response = await axios.post(API_URL, payload, { headers });
+      const { data } = await axios.post(SQUAD_URL, payload, { headers });
 
-    // Construct the actual payment link using the hash
-    const paymentLink = `${BASE_PAYMENT_URL}${hash}`;
+      if (data.status === 200) {
+        const { checkout_url, transaction_ref } = data.data;
+        console.log(
+          `Transaction initiated: ${transaction_ref}, Order ID: ${orderId}`
+        );
 
-    console.log("Payment Link Created:", paymentLink);
-    return { paymentLink, responseData: response.data };
-  } catch (error) {
-    console.error("Error creating payment link:", error.response?.data || error.message);
-    throw error;
-  }
-};
+        return { checkoutUrl: checkout_url, transactionRef: transaction_ref };
+      } else {
+        throw new AppError("Failed to initiate transaction", 500);
+      }
+    } catch (error: any) {
+      console.error("Error initiating payment:", error.message);
+      throw error;
+    }
+  };
 
-// Example usage
-createPaymentLink("123456", 400000, "customer@example.com")
-  .then(({ paymentLink }) => console.log("Payment Link:", paymentLink))
-  .catch((err) => console.error(err));
+  handleWebHook = async (
+    transaction_ref: string,
+    meta: { order_id: string }
+  ) => {
+    if (!transaction_ref || !meta?.order_id) {
+      console.error("Invalid webhook data received");
+      throw new AppError("Invalid webhook data received", 400);
+    }
+
+    const orderId = meta.order_id;
+    await orderRepository.updateOrderStatus(orderId, "CONFIRMED");
+    console.log(`Order ${orderId} confirmed successfully`);
+  };
+}

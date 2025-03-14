@@ -27,6 +27,17 @@ export class CategoryController {
     }
   };
 
+  getOnlyCategories = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const categories = await categoryService.getOnlyCategories();
+      res.status(StatusCodes.OK).json({
+        data: categories,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   getAllCategories = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const categories = await categoryService.getAllCategories();

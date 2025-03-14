@@ -8,6 +8,15 @@ export class CategoryRepository {
     });
   };
 
+  getOnlyCategories = async () => {
+    return prisma.category.findMany({
+      select: {
+        id: true,
+        name: true,
+      },
+    });
+  }
+
   getAllCategories = async () => {
     return prisma.category.findMany({
       include: {

@@ -23,7 +23,9 @@ export const orderSchema = Joi.object({
   escrowStatus: Joi.string()
     .valid(...Object.values(EscrowStatus))
     .required(),
-  shippingAddress: Joi.string().required(),
+  hostelName: Joi.string().required(), 
+  blockNumber: Joi.number().integer().required(),
+  roomNo: Joi.number().integer().required(), 
 });
 
 export const updateOrderStatusSchema = Joi.object({

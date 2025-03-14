@@ -14,7 +14,7 @@ export class OrderController {
       const order = await orderService.createOrder(data);
 
       setImmediate(async () => {
-        // const sellerEmail = order.sellerEmail;
+        // const sellerEmail = order.orderItems[0]?.product?.seller?.user?.email || null;
         if (true) {
           await emailService.sendOrderNotification("fadehandaniel2006@gmail.com", order);
         }
