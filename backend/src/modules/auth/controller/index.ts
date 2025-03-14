@@ -33,10 +33,18 @@ export class AuthController {
   getMe = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const user = await authService.getMe(req.user.email);
-      const { password, ...data } = user;
 
       res.status(StatusCodes.OK).json({
-        data,
+        id: user.id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        role: user.role,
+        wishlist: user.wishlist,
+        hostelName: user.hostelName,
+        blockNumber: user.blockNumber,
+        roomNo: user.roomNo,
+        sellerCompleted: !!user.seller, // Add sellerCompleted based on whether the user has a seller profile
       });
     } catch (error) {
       next(error);

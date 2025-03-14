@@ -86,7 +86,25 @@ export class SellerRepository {
     });
   }
 
-  async createTransaction(data: Prisma.TransactionCreateInput) {}
+  async createTransaction(data: Prisma.TransactionCreateInput & { walletId: string; orderId: string }) {
+    const { walletId, orderId, ...transactionData } = data;
+  
+    return prisma.transaction.create({
+      data: {
+        ...transactionData,
+        wallet: {
+          connect: {
+            id: walletId,
+          },
+        },
+        order: {
+          connect: {
+            id: orderId, 
+          },
+        },
+      },
+    });
+  }
 
   updateProduct = async (id: string, data: IUpdateProduct) => {
     const { categoryId, ...productData } = data;
