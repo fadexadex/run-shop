@@ -44,19 +44,19 @@ export class PaymentService {
           `Transaction initiated: ${transaction_ref}, Order ID: ${orderId}`
         );
 
-        const seller = await sellerRepository.getSellerAndWallet(orderId);
-        if (!seller || !seller.wallet) {
-          throw new AppError("Seller or wallet not found for the order", 404);
-        }
+        // const seller = await sellerRepository.getSellerAndWallet(orderId);
+        // if (!seller || !seller.wallet) {
+        //   throw new AppError("Seller or wallet not found for the order", 404);
+        // }
 
-        await sellerRepository.createTransaction({
-          walletId: seller.wallet.id,
-          orderId,
-          amount,
-          transactionType: "DEBIT", 
-          status: "PENDING", 
-          id: transaction_ref,
-        } as any);
+        // await sellerRepository.createTransaction({
+        //   walletId: seller.wallet.id,
+        //   orderId,
+        //   amount,
+        //   transactionType: "DEBIT", 
+        //   status: "PENDING", 
+        //   id: transaction_ref,
+        // } as any);
 
         return { checkoutUrl: checkout_url, transactionRef: transaction_ref };
       } else {

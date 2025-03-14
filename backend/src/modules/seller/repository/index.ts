@@ -68,23 +68,29 @@ export class SellerRepository {
   }
 
   async getSellerAndWallet(orderId: string) {
-    return prisma.seller.findFirst({
-      where: {
-        orders: {
-          some: {
-            id: orderId,
+    try {
+      const order = await prisma.order.findUnique({
+        where: { id: orderId },
+        include: {
+          seller: {
+            include: {
+              wallet: { select: { id: true } },
+            },
           },
         },
-      },
-      include: {
-        wallet: {
-          select: {
-            id: true, 
-          },
-        },
-      },
-    });
+      });
+  
+      if (!order || !order.seller) {
+        throw new Error("Seller not found for the given order.");
+      }
+  
+      return order.seller;
+    } catch (error) {
+      console.error("Error fetching seller and wallet:", error);
+      throw new Error("Failed to fetch seller and wallet.");
+    }
   }
+  
 
   async createTransaction(data: Prisma.TransactionCreateInput & { walletId: string; orderId: string }) {
     const { walletId, orderId, ...transactionData } = data;
