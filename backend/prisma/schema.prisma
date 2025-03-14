@@ -19,8 +19,11 @@ model User {
   password        String
   firstName       String
   lastName        String
-  shippingAddress String?
   role            Role     @default(CUSTOMER)
+  hostelName      String
+  blockNumber     Int
+  roomNo          Int
+  
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
@@ -109,6 +112,7 @@ model Order {
   escrowStatus  EscrowStatus  @default(HELD)
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
+  shippingAddress String
 
   user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   seller       Seller        @relation(fields: [sellerId], references: [id], onDelete: Cascade)

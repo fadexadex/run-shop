@@ -38,11 +38,13 @@ export class AuthController {
         id: user.id,
         firstName: user.firstName,
         lastName: user.lastName,
-        shippingAddress: user.shippingAddress,
         email: user.email,
         role: user.role,
         sellerCompleted: !!user.seller,
         wishlist: user.wishlist,
+        hostelName: user.hostelName,
+        blockNumber: user.blockNumber,
+        roomNo: user.roomNo,
       });
     } catch (error) {
       next(error);

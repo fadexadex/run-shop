@@ -25,6 +25,7 @@ export type IUpdateProduct = Prisma.ProductUpdateInput & { categoryId: string };
 
 export type ICreateOrder = Prisma.OrderCreateInput & {
   userId: string;
+  sellerId: string;
   items: {
     productId: string;
     quantity: number;
