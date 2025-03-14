@@ -9,12 +9,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useAuth } from "@/lib/auth-context"
-import { Store, ArrowLeft, User, Lock, Mail, Building, Home, DoorClosed } from "lucide-react"
+import { ShoppingBag, ArrowLeft, User, Lock, Mail, Home, Building, DoorClosed } from "lucide-react"
 import { FormError } from "@/components/form-error"
 import { FormSuccess } from "@/components/form-success"
 import { loginValidation, buyerSignUpValidation } from "@/lib/validation"
 
-export default function SellerAuthPage() {
+export default function BuyerAuthPage() {
   const searchParams = useSearchParams()
   const initialMode = searchParams.get("mode") || "register"
 
@@ -49,26 +49,17 @@ export default function SellerAuthPage() {
     // Update the URL when mode changes
     const params = new URLSearchParams()
     params.set("mode", mode)
-    router.replace(`/auth/seller?${params.toString()}`)
+    router.replace(`/auth/buyer?${params.toString()}`)
   }, [mode, router])
 
-  // Check if user is already logged in and redirect accordingly
+  // Check if user is already logged in and redirect to account page
+  // Since this is the buyer auth section, we always redirect to account
   useEffect(() => {
-    if (user) {
-      if (user.role === "SELLER") {
-        // If seller registration is not completed, redirect to onboarding
-        if (!user.sellerCompleted) {
-          router.push("/seller/onboarding")
-        } else {
-          // If seller registration is completed, redirect to dashboard
-          router.push("/seller/dashboard")
-        }
-      } else {
-        // If user is not a seller, redirect to account page
-        router.push("/account")
-      }
+    if (user && !isLoading) {
+      console.log("User already logged in:", user)
+      router.push("/account")
     }
-  }, [user, router])
+  }, [user, isLoading, router])
 
   const handleLoginChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
@@ -114,7 +105,8 @@ export default function SellerAuthPage() {
 
     try {
       await login(loginData.email, loginData.password)
-      // Redirect will happen in the useEffect based on user state
+      // Since this is the buyer auth section, always redirect to account
+      router.push("/account")
     } catch (err: any) {
       setError(err.message || "Login failed. Please check your credentials.")
     } finally {
@@ -127,7 +119,7 @@ export default function SellerAuthPage() {
     setError(null)
     setValidationErrors({})
 
-    // Validate form - using buyerSignUpValidation since the forms are now the same
+    // Validate form
     const errors = buyerSignUpValidation(registerData)
     if (Object.keys(errors).length > 0) {
       setValidationErrors(errors)
@@ -137,7 +129,6 @@ export default function SellerAuthPage() {
     setIsLoading(true)
 
     try {
-      // Register with SELLER role
       await register({
         firstName: registerData.firstName,
         lastName: registerData.lastName,
@@ -146,16 +137,11 @@ export default function SellerAuthPage() {
         hostelName: registerData.hostelName,
         blockNumber: Number.parseInt(registerData.blockNumber),
         roomNo: Number.parseInt(registerData.roomNo),
-        role: "SELLER", // Register directly as a SELLER
+        role: "CUSTOMER",
       })
 
-      // Show success message
-      setSuccess("Registration successful! Redirecting to seller onboarding...")
-
-      // Redirect to seller onboarding after a short delay
-      setTimeout(() => {
-        router.push("/seller/onboarding")
-      }, 1500)
+      // Since this is the buyer auth section, redirect to account
+      router.push("/account")
     } catch (err: any) {
       setError(err.message || "Registration failed. Please try again.")
     } finally {
@@ -179,13 +165,13 @@ export default function SellerAuthPage() {
                 {mode === "login" ? (
                   <User className="h-8 w-8 text-[#008ECC]" />
                 ) : (
-                  <Store className="h-8 w-8 text-[#008ECC]" />
+                  <ShoppingBag className="h-8 w-8 text-[#008ECC]" />
                 )}
               </div>
             </div>
 
             <h1 className="text-2xl font-bold mb-6 text-center">
-              {mode === "login" ? "Seller Login" : "Create a Seller Account"}
+              {mode === "login" ? "Welcome Back" : "Create a Buyer Account"}
             </h1>
 
             <Tabs defaultValue={mode} onValueChange={setMode} className="w-full">
@@ -262,7 +248,7 @@ export default function SellerAuthPage() {
                   </Button>
 
                   <div className="mt-4 text-center text-sm text-gray-600">
-                    Don't have a seller account?{" "}
+                    Don't have an account?{" "}
                     <button
                       type="button"
                       onClick={() => setMode("register")}
@@ -273,9 +259,9 @@ export default function SellerAuthPage() {
                   </div>
 
                   <div className="mt-4 text-center text-sm text-gray-600">
-                    Are you a buyer?{" "}
-                    <Link href="/auth/buyer?mode=login" className="text-[#008ECC] hover:underline">
-                      Login as Buyer
+                    Are you a seller?{" "}
+                    <Link href="/auth/seller?mode=login" className="text-[#008ECC] hover:underline">
+                      Login as Seller
                     </Link>
                   </div>
                 </form>
@@ -455,20 +441,20 @@ export default function SellerAuthPage() {
                     className="w-full bg-[#008ECC] text-white hover:bg-[#007bb3]"
                     disabled={isLoading}
                   >
-                    {isLoading ? "Creating Account..." : "Continue to Onboarding"}
+                    {isLoading ? "Creating Account..." : "Create Account"}
                   </Button>
 
                   <div className="mt-4 text-center text-sm text-gray-600">
-                    Already have a seller account?{" "}
+                    Already have an account?{" "}
                     <button type="button" onClick={() => setMode("login")} className="text-[#008ECC] hover:underline">
                       Log In
                     </button>
                   </div>
 
                   <div className="mt-4 text-center text-sm text-gray-600">
-                    Want to shop on RUNShop?{" "}
-                    <Link href="/auth/buyer?mode=register" className="text-[#008ECC] hover:underline">
-                      Register as Buyer
+                    Want to sell on RUNShop?{" "}
+                    <Link href="/auth/seller?mode=register" className="text-[#008ECC] hover:underline">
+                      Register as Seller
                     </Link>
                   </div>
                 </form>

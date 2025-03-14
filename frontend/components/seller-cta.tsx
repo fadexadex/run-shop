@@ -27,7 +27,7 @@ export default function SellerCTA() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mt-16">
+        {/* <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mt-16">
           <div className="bg-gray-900 p-6 rounded-lg">
             <div className="text-3xl font-bold mb-2">1000+</div>
             <p className="text-gray-300">Active Buyers</p>
@@ -44,7 +44,7 @@ export default function SellerCTA() {
             <div className="text-3xl font-bold mb-2">₦1M+</div>
             <p className="text-gray-300">Monthly Sales</p>
           </div>
-        </div>
+        </div> */}
       </div>
     </section>
   )

@@ -286,23 +286,63 @@ export default function ProductDetails() {
     if (!product) return
 
     try {
-      await fetch("http://localhost:6160/api/v1/orders", {
+      // Show loading state
+      setError(null)
+      const loadingToast = alert("Creating your order...")
+
+      // Get delivery information from user profile
+      const hostelName = user.hostelName || "Prophet Moses"
+      const blockNumber = user.blockNumber || 10
+      const roomNo = user.roomNo || 7
+
+      // Prepare order data
+      const orderData = {
+        sellerId: product.sellerId,
+        totalPrice: Number.parseFloat(product.price) * quantity,
+        orderStatus: "PENDING",
+        paymentMethod: "ONLINE",
+        escrowStatus: "HELD",
+        items: [
+          {
+            productId: product.id,
+            quantity: quantity,
+            price: Number.parseFloat(product.price),
+          },
+        ],
+        hostelName,
+        blockNumber,
+        roomNo,
+      }
+
+      // Get token
+      const token = localStorage.getItem("token")
+      if (!token) {
+        throw new Error("Authentication token not found")
+      }
+
+      // Create order
+      const response = await fetch("http://localhost:6160/api/v1/orders/create", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          productId: product.id,
-          quantity,
-          paymentMethod: "ONLINE",
-        }),
+        body: JSON.stringify(orderData),
       })
 
-      alert("Order placed successfully! Redirecting to payment gateway...")
-      // In a real app, this would redirect to a payment gateway
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.message || "Failed to create order")
+      }
+
+      // Get order details
+      const orderResponse = await response.json()
+
+      // Redirect to order confirmation page
+      router.push(`/order/${orderResponse.id}/confirm`)
     } catch (err: any) {
-      console.error("Error placing order:", err)
-      alert(err.message || "Failed to place order. Please try again.")
+      console.error("Error creating order:", err)
+      setError(err.message || "Failed to create order. Please try again.")
     }
   }
 
