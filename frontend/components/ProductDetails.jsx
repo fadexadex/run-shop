@@ -186,7 +186,7 @@ export default function ProductDetails() {
             </div>
 
             <div className="mb-6">
-              <span className="text-2xl font-bold">${product.price.toFixed(2)}</span>
+              <span className="text-2xl font-bold">₦{product.price.toFixed(2)}</span>
             </div>
 
             <div className="mb-6 p-4 bg-gray-50 rounded-lg">

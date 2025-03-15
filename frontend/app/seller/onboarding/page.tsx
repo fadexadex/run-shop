@@ -60,6 +60,7 @@ export default function SellerOnboarding() {
     setFormData((prev) => ({ ...prev, paymentMethod: value }))
   }
 
+  // Replace the handleSubmit function with this mock implementation
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
@@ -67,37 +68,10 @@ export default function SellerOnboarding() {
     setSuccess(null)
 
     try {
-      // Create form data for file upload
-      const formDataToSend = new FormData()
-      formDataToSend.append("catalogueName", formData.catalogueName)
-      formDataToSend.append("paymentMethod", formData.paymentMethod)
+      // Simulate network delay
+      await new Promise((resolve) => setTimeout(resolve, 1500))
 
-      if (formData.cataloguePicture) {
-        formDataToSend.append("cataloguePicture", formData.cataloguePicture)
-      }
-
-      // Get the token from localStorage
-      const token = localStorage.getItem("token")
-
-      if (!token) {
-        throw new Error("Authentication token not found. Please log in again.")
-      }
-
-      // Make API call to register seller with the token in the Authorization header
-      const response = await fetch("http://localhost:6160/api/v1/sellers/register", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: formDataToSend,
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-        throw new Error(errorData.message || "Failed to complete seller registration")
-      }
-
-      // Update the user's seller status
+      // Mock successful registration
       updateSellerStatus(true)
 
       setSuccess("Seller registration completed successfully! Redirecting to dashboard...")

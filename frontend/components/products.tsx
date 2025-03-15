@@ -5,7 +5,6 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Heart } from "lucide-react"
-import { productsApi, wishlistApi } from "@/lib/api"
 import { useAuth } from "@/lib/auth-context"
 
 interface Product {
@@ -35,12 +34,30 @@ export default function Products() {
   const { user } = useAuth()
 
   useEffect(() => {
-    const fetchProducts = async () => {
+    const fetchProductsWithDelay = async () => {
       try {
         setLoading(true)
-        const response = await productsApi.getAll({ limit: 4 })
-        setProducts(response.data.products)
-      } catch (err: any) {
+
+        // Import mock data
+        const { products: mockProducts } = await import("@/lib/db")
+
+        // Simulate network delay
+        await new Promise((resolve) => setTimeout(resolve, 1200))
+
+        // Format the mock data to match expected structure
+        const formattedProducts = mockProducts.slice(0, 4).map((product) => ({
+          id: product.id.toString(),
+          name: product.name,
+          price: product.price.toString(),
+          imageUrls: [product.image],
+          category: {
+            id: product.category,
+            name: product.category.charAt(0).toUpperCase() + product.category.slice(1),
+          },
+        }))
+
+        setProducts(formattedProducts)
+      } catch (err) {
         console.error("Error fetching products:", err)
         setError("Failed to load products")
       } finally {
@@ -48,25 +65,27 @@ export default function Products() {
       }
     }
 
-    fetchProducts()
+    fetchProductsWithDelay()
   }, [])
 
   useEffect(() => {
     // Fetch wishlist if user is logged in
-    const fetchWishlist = async () => {
+    const fetchWishlistWithDelay = async () => {
       if (!user) return
 
       try {
-        const response = await wishlistApi.getWishlist()
-        if (response && response.data) {
-          setWishlist(response.data.map((item: any) => item.productId))
-        }
+        // Simulate network delay
+        await new Promise((resolve) => setTimeout(resolve, 800))
+
+        // Mock wishlist data
+        const mockWishlistItems = [1, 3, 5].map((id) => id.toString())
+        setWishlist(mockWishlistItems)
       } catch (err) {
         console.error("Error fetching wishlist:", err)
       }
     }
 
-    fetchWishlist()
+    fetchWishlistWithDelay()
   }, [user])
 
   const toggleWishlist = async (productId: string) => {
@@ -77,11 +96,12 @@ export default function Products() {
     }
 
     try {
+      // Simulate network delay
+      await new Promise((resolve) => setTimeout(resolve, 500))
+
       if (wishlist.includes(productId)) {
-        await wishlistApi.removeFromWishlist(productId)
         setWishlist(wishlist.filter((id) => id !== productId))
       } else {
-        await wishlistApi.addToWishlist(productId)
         setWishlist([...wishlist, productId])
       }
     } catch (err) {

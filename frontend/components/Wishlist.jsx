@@ -90,7 +90,7 @@ export default function Wishlist() {
                     <p className="text-xs text-gray-500">Added on {new Date(item.dateAdded).toLocaleDateString()}</p>
                   </div>
                   <div className="mt-2 flex items-center justify-between">
-                    <span className="font-bold">${item.price.toFixed(2)}</span>
+                    <span className="font-bold">₦{Number.parseFloat(item.price).toFixed(2)}</span>
                   </div>
                 </CardContent>
                 <CardFooter className="p-4 pt-0 flex gap-2">

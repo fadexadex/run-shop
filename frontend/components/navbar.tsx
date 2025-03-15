@@ -21,6 +21,37 @@ export default function Navbar() {
   const { user } = useAuth()
   const searchRef = useRef<HTMLDivElement>(null)
 
+  // Add wishlist count functionality
+  // First, add a state for wishlist count
+  const [wishlistCount, setWishlistCount] = useState(0)
+
+  // Add an effect to update the wishlist count
+  useEffect(() => {
+    const fetchWishlistCount = async () => {
+      if (!user) return
+
+      try {
+        // In a real app, this would be an API call
+        // For demo, we'll use a mock count
+        const { wishlistItems } = await import("@/lib/db")
+        const userWishlist = wishlistItems.filter((item) => item.userId === user.id)
+        setWishlistCount(userWishlist.length)
+      } catch (err) {
+        console.error("Error fetching wishlist count:", err)
+      }
+    }
+
+    fetchWishlistCount()
+
+    // Set up an event listener for wishlist updates
+    const handleWishlistUpdate = () => fetchWishlistCount()
+    window.addEventListener("wishlistUpdated", handleWishlistUpdate)
+
+    return () => {
+      window.removeEventListener("wishlistUpdated", handleWishlistUpdate)
+    }
+  }, [user])
+
   useEffect(() => {
     if (debouncedSearch.trim().length > 0) {
       fetchSearchSuggestions(debouncedSearch)
@@ -154,9 +185,9 @@ export default function Navbar() {
         <div className="hidden md:flex items-center gap-4">
           <Link href="/wishlist" className="p-2 rounded-full hover:bg-gray-100 relative">
             <Heart className="h-5 w-5" />
-            {user && (
+            {user && wishlistCount > 0 && (
               <span className="absolute -top-1 -right-1 bg-[#008ECC] text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
-                0
+                {wishlistCount}
               </span>
             )}
           </Link>

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Heart, ChevronRight, Loader2 } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
+import { createSlug } from "@/lib/mock-service"
 
 interface Product {
   id: string
@@ -27,14 +28,6 @@ interface Category {
   products: Product[]
 }
 
-// Helper function to create a slug from product name
-const createSlug = (name: string) => {
-  return name
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "")
-}
-
 export default function CategoryProductsSection() {
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
@@ -43,200 +36,82 @@ export default function CategoryProductsSection() {
   const { user } = useAuth()
 
   useEffect(() => {
-    const fetchCategories = async () => {
+    // Fix the category products section to properly use mock data
+    const fetchCategoriesWithDelay = async () => {
       try {
         setLoading(true)
 
-        // Use hardcoded fallback data immediately for faster initial rendering
-        const fallbackCategories = [
-          {
-            id: "b38346bd-feca-406e-ac43-8bb107f09031",
-            name: "Accessories",
-            products: [
-              {
-                id: "3970c0e2-a929-46f6-9c90-72cd7930c185",
-                name: "Anker Soundcore Life Q20",
-                description: "Hybrid Active Noise Cancelling over-ear headphones with Hi-Res audio.",
-                price: "79.99",
-                stockQuantity: 150,
-                imageUrls: ["https://res.cloudinary.com/dwl6lr9vq/image/upload/v1741805573/yrc23llqxj1odwvz0r2h.webp"],
-                sellerId: "c8d1f69f-201e-4cb4-935b-4b5d3da97aeb",
-                seller: {
-                  id: "c8d1f69f-201e-4cb4-935b-4b5d3da97aeb",
-                  catalogueName: "Dima Stores",
-                },
-              },
-              {
-                id: "4970c0e2-a929-46f6-9c90-72cd7930c186",
-                name: "Wireless Earbuds",
-                description: "Bluetooth 5.0 wireless earbuds with noise cancellation.",
-                price: "49.99",
-                stockQuantity: 75,
-                imageUrls: ["/placeholder.svg?height=200&width=200"],
-                sellerId: "c8d1f69f-201e-4cb4-935b-4b5d3da97aeb",
-                seller: {
-                  id: "c8d1f69f-201e-4cb4-935b-4b5d3da97aeb",
-                  catalogueName: "Dima Stores",
-                },
-              },
-            ],
-          },
-          {
-            id: "c38346bd-feca-406e-ac43-8bb107f09032",
-            name: "Electronics",
-            products: [
-              {
-                id: "5970c0e2-a929-46f6-9c90-72cd7930c187",
-                name: "Smartphone Power Bank",
-                description: "20000mAh high capacity power bank with fast charging.",
-                price: "39.99",
-                stockQuantity: 100,
-                imageUrls: ["/placeholder.svg?height=200&width=200"],
-                sellerId: "c8d1f69f-201e-4cb4-935b-4b5d3da97aeb",
-                seller: {
-                  id: "c8d1f69f-201e-4cb4-935b-4b5d3da97aeb",
-                  catalogueName: "Dima Stores",
-                },
-              },
-              {
-                id: "6970c0e2-a929-46f6-9c90-72cd7930c188",
-                name: "Bluetooth Speaker",
-                description: "Portable waterproof Bluetooth speaker with 24-hour battery life.",
-                price: "59.99",
-                stockQuantity: 50,
-                imageUrls: ["/placeholder.svg?height=200&width=200"],
-                sellerId: "c8d1f69f-201e-4cb4-935b-4b5d3da97aeb",
-                seller: {
-                  id: "c8d1f69f-201e-4cb4-935b-4b5d3da97aeb",
-                  catalogueName: "Dima Stores",
-                },
-              },
-            ],
-          },
-          {
-            id: "d38346bd-feca-406e-ac43-8bb107f09033",
-            name: "Clothing",
-            products: [
-              {
-                id: "7970c0e2-a929-46f6-9c90-72cd7930c189",
-                name: "Campus Hoodie",
-                description: "Comfortable cotton hoodie with university logo.",
-                price: "29.99",
-                stockQuantity: 200,
-                imageUrls: ["/placeholder.svg?height=200&width=200"],
-                sellerId: "d8d1f69f-201e-4cb4-935b-4b5d3da97aec",
-                seller: {
-                  id: "d8d1f69f-201e-4cb4-935b-4b5d3da97aec",
-                  catalogueName: "Campus Threads",
-                },
-              },
-              {
-                id: "8970c0e2-a929-46f6-9c90-72cd7930c190",
-                name: "Graphic T-Shirt",
-                description: "100% cotton t-shirt with trendy graphic design.",
-                price: "19.99",
-                stockQuantity: 150,
-                imageUrls: ["/placeholder.svg?height=200&width=200"],
-                sellerId: "d8d1f69f-201e-4cb4-935b-4b5d3da97aec",
-                seller: {
-                  id: "d8d1f69f-201e-4cb4-935b-4b5d3da97aec",
-                  catalogueName: "Campus Threads",
-                },
-              },
-            ],
-          },
-        ]
+        // Simulate a network delay
+        await new Promise((resolve) => setTimeout(resolve, 1000))
 
-        // Set categories immediately with fallback data
-        setCategories(fallbackCategories)
-        setLoading(false)
+        // Import mock data directly
+        const { categories, products } = await import("@/lib/db")
 
-        // Then try to fetch from API in the background
-        try {
-          const response = await fetch("http://localhost:6160/api/v1/categories").catch((err) => {
-            console.error("Network error fetching categories:", err)
-            return null
-          })
+        // Process each category to get its products
+        const categoriesWithProducts = categories.map((category) => {
+          // Get products for this category
+          const categoryProducts = products.filter((product) => product.category === category.id)
 
-          if (response && response.ok) {
-            const data = await response.json()
+          // Limit to 4 products per category for the home page
+          const limitedProducts = categoryProducts.slice(0, 4)
 
-            // Process API data in the background
-            const categoriesWithProducts = await Promise.all(
-              data.data.map(async (category: any) => {
-                try {
-                  const productsResponse = await fetch(
-                    `http://localhost:6160/api/v1/categories/${category.id}/products`,
-                  ).catch((err) => {
-                    console.error(`Network error fetching products for category ${category.id}:`, err)
-                    return null
-                  })
+          // Format products for display
+          const formattedProducts = limitedProducts.map((product) => ({
+            id: product.id.toString(),
+            name: product.name,
+            price: product.price.toString(),
+            imageUrls: [product.image],
+            description: product.description,
+            stockQuantity: product.stockQuantity || Math.floor(Math.random() * 50) + 10,
+            sellerId: product.seller.id.toString(),
+            seller: {
+              id: product.seller.id.toString(),
+              catalogueName: product.seller.name,
+            },
+          }))
 
-                  if (!productsResponse || !productsResponse.ok) {
-                    return {
-                      ...category,
-                      products: [],
-                    }
-                  }
-
-                  const productsData = await productsResponse.json()
-                  return {
-                    ...category,
-                    products: productsData.data || [],
-                  }
-                } catch (error) {
-                  console.error(`Error fetching products for category ${category.id}:`, error)
-                  return {
-                    ...category,
-                    products: [],
-                  }
-                }
-              }),
-            )
-
-            // Filter out categories with no products
-            const filteredCategories = categoriesWithProducts.filter(
-              (category: Category) => category.products && category.products.length > 0,
-            )
-
-            // Only update if we got valid data
-            if (filteredCategories.length > 0) {
-              setCategories(filteredCategories)
-            }
+          // Return category with its products
+          return {
+            ...category,
+            products: formattedProducts,
           }
-        } catch (err) {
-          console.error("Error fetching categories in background:", err)
-          // Keep using fallback data, no need to update error state
-        }
+        })
+
+        // Filter out categories with no products
+        const filteredCategories = categoriesWithProducts.filter(
+          (category) => category.products && category.products.length > 0,
+        )
+
+        setCategories(filteredCategories)
+        setLoading(false)
       } catch (err) {
-        console.error("Error in category products section:", err)
+        console.error("Error loading mock data:", err)
         setError("Failed to load categories and products")
+        setLoading(false)
       }
     }
 
-    // Fetch wishlist if user is logged in
-    const fetchWishlist = async () => {
+    // Simulate fetching wishlist data with delay
+    const fetchWishlistWithDelay = async () => {
       if (user) {
         try {
-          const response = await fetch("http://localhost:6160/api/v1/wishlist").catch((err) => {
-            console.error("Network error fetching wishlist:", err)
-            return null
-          })
+          // Simulate a network delay
+          await new Promise((resolve) => setTimeout(resolve, 800))
 
-          if (response && response.ok) {
-            const data = await response.json()
-            setWishlist(data.data.map((item: any) => item.productId))
-          }
+          // Mock wishlist data
+          const mockWishlistItems = [1, 3, 5].map((id) => id.toString())
+          setWishlist(mockWishlistItems)
         } catch (err) {
-          console.error("Error fetching wishlist:", err)
+          console.error("Error with mock wishlist:", err)
         }
       }
     }
 
-    fetchCategories()
-    fetchWishlist()
+    fetchCategoriesWithDelay()
+    fetchWishlistWithDelay()
   }, [user])
 
+  // Toggle wishlist function
   const toggleWishlist = async (productId: string) => {
     if (!user) {
       window.location.href = "/auth?mode=login"
@@ -244,21 +119,14 @@ export default function CategoryProductsSection() {
     }
 
     try {
+      // Simulate network delay
+      await new Promise((resolve) => setTimeout(resolve, 500))
+
       if (wishlist.includes(productId)) {
         // Remove from wishlist
-        await fetch(`http://localhost:6160/api/v1/wishlist/${productId}`, {
-          method: "DELETE",
-        })
         setWishlist(wishlist.filter((id) => id !== productId))
       } else {
         // Add to wishlist
-        await fetch("http://localhost:6160/api/v1/wishlist", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ productId }),
-        })
         setWishlist([...wishlist, productId])
       }
     } catch (err) {
@@ -321,7 +189,7 @@ export default function CategoryProductsSection() {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-              {category.products.slice(0, 4).map((product) => (
+              {category.products.map((product) => (
                 <Card key={product.id} className="overflow-hidden rounded-lg border">
                   <Link href={`/product/${createSlug(product.name)}`}>
                     <div className="relative overflow-hidden">
@@ -358,7 +226,7 @@ export default function CategoryProductsSection() {
                       </button>
                     </div>
                     <div className="mt-2 flex items-center justify-between">
-                      <span className="font-bold">${Number.parseFloat(product.price).toFixed(2)}</span>
+                      <span className="font-bold">₦{Number.parseFloat(product.price).toFixed(2)}</span>
                       <span className="text-xs text-gray-500">
                         {product.stockQuantity > 0 ? `${product.stockQuantity} in stock` : "Out of stock"}
                       </span>

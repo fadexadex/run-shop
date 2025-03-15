@@ -1,5 +1,10 @@
-// Base API URL
+// Base API URL - only used for payments
 const API_BASE_URL = "http://localhost:6160/api/v1"
+
+// Helper function for simulating API delays
+async function simulateDelay(ms = 1000) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
 
 // Helper function for making API requests
 async function apiRequest(endpoint: string, options: RequestInit = {}) {
@@ -83,48 +88,53 @@ export const authApi = {
   },
 }
 
-// Categories API
+// Categories API with mock data
 export const categoriesApi = {
   getAll: async () => {
-    const data = await apiRequest("/categories/all")
-    return data
+    await simulateDelay()
+    const { categories, products } = await import("./db")
+
+    const categoriesWithProducts = categories.map((category) => {
+      const categoryProducts = products.filter((product) => product.category === category.id)
+      return {
+        ...category,
+        products: categoryProducts,
+      }
+    })
+
+    return { data: categoriesWithProducts }
   },
 
   getCategoryOnly: async () => {
-    const data = await apiRequest("/categories/only")
-    return data
+    await simulateDelay()
+    const { categories } = await import("./db")
+    return { data: categories }
   },
 
   getCategoryProducts: async (categoryId: string) => {
-    const data = await apiRequest(`/categories/${categoryId}`)
-    return data
+    await simulateDelay()
+    const { products } = await import("./db")
+    const categoryProducts = products.filter((product) => product.category === categoryId)
+    return { data: categoryProducts }
   },
 
   addCategory: async (categoryData: { name: string; description?: string }) => {
-    const data = await apiRequest("/categories", {
-      method: "POST",
-      body: JSON.stringify(categoryData),
-    })
-    return data
+    await simulateDelay()
+    return { success: true, data: { id: `new-${Date.now()}`, ...categoryData } }
   },
 
   updateCategory: async (categoryId: string, categoryData: { name: string; description?: string }) => {
-    const data = await apiRequest(`/categories/${categoryId}`, {
-      method: "PUT",
-      body: JSON.stringify(categoryData),
-    })
-    return data
+    await simulateDelay()
+    return { success: true, data: { id: categoryId, ...categoryData } }
   },
 
   deleteCategory: async (categoryId: string) => {
-    const data = await apiRequest(`/categories/${categoryId}`, {
-      method: "DELETE",
-    })
-    return data
+    await simulateDelay()
+    return { success: true }
   },
 }
 
-// Products API
+// Products API with mock data
 export const productsApi = {
   getAll: async (
     params: {
@@ -133,54 +143,67 @@ export const productsApi = {
       filters?: Record<string, any>
     } = {},
   ) => {
-    const { page = 1, limit = 10, filters = {} } = params
-    const queryParams = new URLSearchParams({
-      page: page.toString(),
-      limit: limit.toString(),
-    })
+    await simulateDelay()
+    const { products } = await import("./db")
 
-    if (Object.keys(filters).length > 0) {
-      queryParams.append("filters", JSON.stringify(filters))
+    const { page = 1, limit = 10 } = params
+    const startIndex = (page - 1) * limit
+    const endIndex = startIndex + limit
+
+    const paginatedProducts = products.slice(startIndex, endIndex)
+
+    return {
+      data: {
+        products: paginatedProducts,
+        pagination: {
+          total: products.length,
+          page,
+          limit,
+          pages: Math.ceil(products.length / limit),
+        },
+      },
     }
-
-    const data = await apiRequest(`/products/all?${queryParams.toString()}`)
-    return data
   },
 
   getById: async (productId: string) => {
-    const data = await apiRequest(`/products/${productId}`)
-    return data
+    await simulateDelay()
+    const { products } = await import("./db")
+    const product = products.find((p) => p.id.toString() === productId)
+
+    if (!product) {
+      throw new Error("Product not found")
+    }
+
+    return { data: product }
   },
 }
 
-// Wishlist API
+// Wishlist API with mock data
 export const wishlistApi = {
   getWishlist: async () => {
-    const data = await apiRequest("/wishlist")
-    return data
+    await simulateDelay()
+    // Mock wishlist items
+    const wishlistItems = [1, 3, 5].map((id) => ({ productId: id.toString() }))
+    return { data: wishlistItems }
   },
 
   addToWishlist: async (productId: string) => {
-    const data = await apiRequest("/wishlist/add", {
-      method: "POST",
-      body: JSON.stringify({ productId }),
-    })
-    return data
+    await simulateDelay()
+    return { success: true, data: { productId } }
   },
 
   removeFromWishlist: async (productId: string) => {
-    const data = await apiRequest(`/wishlist/remove/${productId}`, {
-      method: "DELETE",
-    })
-    return data
+    await simulateDelay()
+    return { success: true }
   },
 }
 
-// Orders API
+// Orders API with mock data
 export const ordersApi = {
   getOrders: async () => {
-    const data = await apiRequest("/orders")
-    return data
+    await simulateDelay()
+    const { orders } = await import("./db")
+    return { data: orders }
   },
 
   createOrder: async (orderData: {
@@ -188,129 +211,89 @@ export const ordersApi = {
     quantity: number
     paymentMethod: "ONLINE" | "DELIVERY"
   }) => {
-    const data = await apiRequest("/orders/create", {
-      method: "POST",
-      body: JSON.stringify(orderData),
-    })
-    return data
+    await simulateDelay()
+
+    // Keep the real payment API call if payment method is ONLINE
+    if (orderData.paymentMethod === "ONLINE") {
+      try {
+        const response = await fetch(`${API_BASE_URL}/payments/initiate`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            amount: 1000, // Example amount
+            orderId: `order-${Date.now()}`,
+            ...orderData,
+          }),
+        })
+
+        if (!response.ok) {
+          throw new Error("Payment initiation failed")
+        }
+
+        return await response.json()
+      } catch (error) {
+        console.error("Payment error:", error)
+        throw error
+      }
+    }
+
+    // Mock response for non-payment orders
+    return {
+      success: true,
+      data: {
+        id: `order-${Date.now()}`,
+        ...orderData,
+        status: "pending",
+        createdAt: new Date().toISOString(),
+      },
+    }
   },
 }
 
 // Seller API
 export const sellerApi = {
   getProfile: async () => {
-    const data = await apiRequest("/sellers/profile")
-    return data
+    await simulateDelay()
+    return { data: { name: "Mock Seller", id: "seller-1" } }
   },
 
   updateProfile: async (formData: FormData) => {
-    // For FormData, we need to handle it differently since it's not JSON
-    const token = localStorage.getItem("token")
-
-    const headers: HeadersInit = {}
-
-    if (token) {
-      headers["Authorization"] = `Bearer ${token}`
-    }
-
-    const response = await fetch(`${API_BASE_URL}/sellers/update`, {
-      method: "PUT",
-      headers,
-      body: formData,
-    })
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}))
-      throw new Error(errorData.message || "Something went wrong")
-    }
-
-    return response.json()
+    await simulateDelay()
+    return { success: true, data: { message: "Profile updated successfully" } }
   },
 
   registerSeller: async (formData: FormData) => {
-    // For FormData, we need to handle it differently since it's not JSON
-    const token = localStorage.getItem("token")
-
-    const headers: HeadersInit = {}
-
-    if (token) {
-      headers["Authorization"] = `Bearer ${token}`
-    }
-
-    const response = await fetch(`${API_BASE_URL}/sellers/register`, {
-      method: "POST",
-      headers,
-      body: formData,
-    })
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}))
-      throw new Error(errorData.message || "Something went wrong")
-    }
-
-    return response.json()
+    await simulateDelay()
+    return { success: true, data: { message: "Seller registered successfully" } }
   },
 }
 
 // Products API for sellers
 export const sellerProductsApi = {
   getProducts: async (sellerId: string) => {
-    const data = await apiRequest(`/sellers/${sellerId}/products`)
-    return data
+    await simulateDelay()
+    const mockProducts = [
+      { id: "prod-1", name: "Mock Product 1", sellerId },
+      { id: "prod-2", name: "Mock Product 2", sellerId },
+    ]
+    return { data: mockProducts }
   },
 
   addProduct: async (sellerId: string, formData: FormData) => {
-    // For FormData, we need to handle it differently since it's not JSON
-    const token = localStorage.getItem("token")
-
-    const headers: HeadersInit = {}
-
-    if (token) {
-      headers["Authorization"] = `Bearer ${token}`
-    }
-
-    const response = await fetch(`${API_BASE_URL}/sellers/${sellerId}/catalogue`, {
-      method: "POST",
-      headers,
-      body: formData,
-    })
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}))
-      throw new Error(errorData.message || "Failed to add product")
-    }
-
-    return response.json()
+    await simulateDelay()
+    return { success: true, data: { message: "Product added successfully" } }
   },
 
   updateProduct: async (productId: string, formData: FormData) => {
-    const token = localStorage.getItem("token")
-
-    const headers: HeadersInit = {}
-
-    if (token) {
-      headers["Authorization"] = `Bearer ${token}`
-    }
-
-    const response = await fetch(`${API_BASE_URL}/products/${productId}`, {
-      method: "PUT",
-      headers,
-      body: formData,
-    })
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}))
-      throw new Error(errorData.message || "Failed to update product")
-    }
-
-    return response.json()
+    await simulateDelay()
+    return { success: true, data: { message: "Product updated successfully" } }
   },
 
   deleteProduct: async (productId: string) => {
-    const data = await apiRequest(`/products/${productId}`, {
-      method: "DELETE",
-    })
-    return data
+    await simulateDelay()
+    return { success: true }
   },
 }
 

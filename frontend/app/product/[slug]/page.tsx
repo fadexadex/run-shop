@@ -1,11 +1,5 @@
 "use client"
 
-import { CardFooter } from "@/components/ui/card"
-
-import { CardContent } from "@/components/ui/card"
-
-import { Card } from "@/components/ui/card"
-
 import type React from "react"
 
 import { useState, useEffect } from "react"
@@ -23,202 +17,100 @@ import {
   Store,
   Package,
   Star,
-  ShoppingCart,
+  AlertCircle,
 } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-
-interface Product {
-  id: string
-  name: string
-  description: string
-  price: string
-  stockQuantity: number
-  imageUrls: string[]
-  categoryId: string
-  sellerId: string
-  category: {
-    name: string
-  }
-  seller: {
-    id: string
-    catalogueName: string
-  }
-}
-
-// Helper function to create a slug from product name
-const createSlug = (name: string) => {
-  return name
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "")
-}
+import { mockWishlistService, mockOrdersService, createSlug } from "@/lib/mock-service"
+import { useToast } from "@/hooks/use-toast"
+import { Card, CardContent, CardFooter } from "@/components/ui/card"
 
 export default function ProductDetails() {
   const params = useParams()
   const slug = params.slug as string
   const router = useRouter()
+  const { toast } = useToast()
 
-  const [product, setProduct] = useState<Product | null>(null)
+  const [product, setProduct] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [orderLoading, setOrderLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [quantity, setQuantity] = useState(1)
   const [isWishlisted, setIsWishlisted] = useState(false)
   const [activeImage, setActiveImage] = useState(0)
-  const [relatedProducts, setRelatedProducts] = useState<Product[]>([])
+  const [relatedProducts, setRelatedProducts] = useState<any[]>([])
   const { user } = useAuth()
 
-  const fetchProductDetails = async () => {
-    setLoading(true)
-    try {
-      // First, try to fetch all products to find the one with matching slug
-      const productsResponse = await fetch("http://localhost:6160/api/v1/products").catch((err) => {
-        console.error("Network error fetching products:", err)
-        return null
-      })
-
-      // If the fetch failed or returned an error status, use fallback data
-      if (!productsResponse || !productsResponse.ok) {
-        console.warn("Using fallback product data due to API error")
-
-        // Check if the slug matches our fallback product
-        if (slug === "anker-soundcore-life-q20") {
-          const fallbackProduct = {
-            id: "3970c0e2-a929-46f6-9c90-72cd7930c185",
-            name: "Anker Soundcore Life Q20",
-            description:
-              "Hybrid Active Noise Cancelling over-ear headphones with Hi-Res audio, deep bass, and up to 40 hours of playtime. Features memory foam ear cups and Bluetooth 5.0 for seamless connectivity.",
-            price: "79.99",
-            stockQuantity: 150,
-            categoryId: "b38346bd-feca-406e-ac43-8bb107f09031",
-            imageUrls: ["https://res.cloudinary.com/dwl6lr9vq/image/upload/v1741805573/yrc23llqxj1odwvz0r2h.webp"],
-            sellerId: "c8d1f69f-201e-4cb4-935b-4b5d3da97aeb",
-            category: {
-              name: "Accessories",
-            },
-            seller: {
-              id: "c8d1f69f-201e-4cb4-935b-4b5d3da97aeb",
-              catalogueName: "Dima Stores",
-            },
-          }
-
-          // Related products
-          const fallbackRelated = [
-            {
-              id: "4970c0e2-a929-46f6-9c90-72cd7930c186",
-              name: "Wireless Earbuds",
-              description: "Bluetooth 5.0 wireless earbuds with noise cancellation.",
-              price: "49.99",
-              stockQuantity: 75,
-              imageUrls: ["/placeholder.svg?height=400&width=300"],
-              sellerId: "c8d1f69f-201e-4cb4-935b-4b5d3da97aeb",
-              categoryId: "b38346bd-feca-406e-ac43-8bb107f09031",
-              category: {
-                name: "Accessories",
-              },
-              seller: {
-                id: "c8d1f69f-201e-4cb4-935b-4b5d3da97aeb",
-                catalogueName: "Dima Stores",
-              },
-            },
-            {
-              id: "5970c0e2-a929-46f6-9c90-72cd7930c187",
-              name: "Smartphone Power Bank",
-              description: "20000mAh high capacity power bank with fast charging.",
-              price: "39.99",
-              stockQuantity: 100,
-              imageUrls: ["/placeholder.svg?height=400&width=300"],
-              sellerId: "c8d1f69f-201e-4cb4-935b-4b5d3da97aeb",
-              categoryId: "c38346bd-feca-406e-ac43-8bb107f09032",
-              category: {
-                name: "Electronics",
-              },
-              seller: {
-                id: "c8d1f69f-201e-4cb4-935b-4b5d3da97aeb",
-                catalogueName: "Dima Stores",
-              },
-            },
-          ]
-
-          setProduct(fallbackProduct)
-          setRelatedProducts(fallbackRelated)
-          setLoading(false)
-          return
-        } else {
-          throw new Error("Product not found")
-        }
-      }
-
-      const productsData = await productsResponse.json()
-      const products = productsData.data || []
-
-      // Find the product with a matching slug
-      const matchedProduct = products.find((p: any) => createSlug(p.name) === slug)
-
-      if (!matchedProduct) {
-        throw new Error("Product not found")
-      }
-
-      // Fetch detailed product information
-      const response = await fetch(`http://localhost:6160/api/v1/products/${matchedProduct.id}`).catch((err) => {
-        console.error("Network error fetching product details:", err)
-        return null
-      })
-
-      if (!response || !response.ok) {
-        throw new Error("Failed to fetch product details")
-      }
-
-      const data = await response.json()
-      setProduct(data.data)
-
-      // Find related products (same category or same seller)
-      const related = products
-        .filter(
-          (p: any) =>
-            p.id !== matchedProduct.id &&
-            (p.categoryId === matchedProduct.categoryId || p.sellerId === matchedProduct.sellerId),
-        )
-        .slice(0, 4)
-
-      setRelatedProducts(related)
-    } catch (error) {
-      console.error("Error fetching product details:", error)
-      setError("Error loading product details. Please try again later.")
-    } finally {
-      setLoading(false)
-    }
-  }
-
   useEffect(() => {
-    const checkWishlist = async () => {
-      if (!user) return
-
+    const fetchProductData = async () => {
       try {
-        const response = await fetch("http://localhost:6160/api/v1/wishlist")
-        if (response.ok) {
-          const data = await response.json()
-          if (data.data) {
-            const productInWishlist = data.data.some((item: any) => {
-              // Find the product with matching slug
-              const itemProduct = item.product || {}
-              return createSlug(itemProduct.name) === slug
-            })
-            setIsWishlisted(productInWishlist)
-          }
+        setLoading(true)
+
+        // Simulate network delay
+        await new Promise((resolve) => setTimeout(resolve, 1200))
+
+        // Import mock data
+        const { products } = await import("@/lib/db")
+
+        // Find the product by slug
+        const foundProduct = products.find((p) => createSlug(p.name) === slug)
+
+        if (!foundProduct) {
+          setError("Product not found")
+          return
         }
+
+        // Format the product data
+        const formattedProduct = {
+          id: foundProduct.id.toString(),
+          name: foundProduct.name,
+          price: foundProduct.price.toString(),
+          description: foundProduct.description,
+          features: foundProduct.features,
+          imageUrls: [foundProduct.image],
+          category: {
+            id: foundProduct.category,
+            name: foundProduct.category.charAt(0).toUpperCase() + foundProduct.category.slice(1),
+          },
+          seller: foundProduct.seller,
+          inStock: foundProduct.inStock,
+          stockQuantity: foundProduct.stockQuantity || 100,
+          sellerId: foundProduct.seller.id.toString(),
+        }
+
+        setProduct(formattedProduct)
+
+        // Get related products (same category)
+        const related = products
+          .filter((p) => p.category === foundProduct.category && p.id !== foundProduct.id)
+          .slice(0, 4)
+          .map((p) => ({
+            id: p.id.toString(),
+            name: p.name,
+            price: p.price.toString(),
+            description: p.description,
+            imageUrls: [p.image],
+            category: {
+              id: p.category,
+              name: p.category.charAt(0).toUpperCase() + p.category.slice(1),
+            },
+          }))
+
+        setRelatedProducts(related)
       } catch (err) {
-        console.error("Error checking wishlist:", err)
+        console.error("Error fetching product:", err)
+        setError("Failed to load product details")
+      } finally {
+        setLoading(false)
       }
     }
 
     if (slug) {
-      fetchProductDetails()
-      checkWishlist()
+      fetchProductData()
     }
-  }, [slug, user])
+  }, [slug, params.slug])
 
   const handleQuantityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = Number.parseInt(e.target.value)
@@ -239,9 +131,10 @@ export default function ProductDetails() {
     }
   }
 
+  // Update the toggleWishlist function to work with mock data
   const toggleWishlist = async () => {
     if (!user) {
-      router.push("/auth?mode=login")
+      router.push("/auth/buyer?mode=login")
       return
     }
 
@@ -249,37 +142,55 @@ export default function ProductDetails() {
 
     try {
       if (isWishlisted) {
-        // Find wishlist item ID first
-        const wishlistResponse = await fetch("http://localhost:6160/api/v1/wishlist")
-        if (wishlistResponse.ok) {
-          const wishlistData = await wishlistResponse.json()
-          const wishlistItem = wishlistData.data.find((item: any) => item.product && item.product.id === product.id)
-
-          if (wishlistItem) {
-            await fetch(`http://localhost:6160/api/v1/wishlist/${wishlistItem.id}`, {
-              method: "DELETE",
-            })
-            setIsWishlisted(false)
-          }
-        }
-      } else {
-        await fetch("http://localhost:6160/api/v1/wishlist", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ productId: product.id }),
+        await mockWishlistService.removeFromWishlist(user.id, product.id)
+        setIsWishlisted(false)
+        toast({
+          title: "Removed from wishlist",
+          description: `${product.name} has been removed from your wishlist.`,
+          variant: "default",
         })
+      } else {
+        await mockWishlistService.addToWishlist(user.id, product.id)
         setIsWishlisted(true)
+        toast({
+          title: "Added to wishlist",
+          description: `${product.name} has been added to your wishlist.`,
+          variant: "default",
+        })
       }
+
+      // Dispatch event to update wishlist count in navbar
+      window.dispatchEvent(new Event("wishlistUpdated"))
     } catch (err) {
       console.error("Error updating wishlist:", err)
+      toast({
+        title: "Error",
+        description: "Failed to update wishlist. Please try again.",
+        variant: "destructive",
+      })
     }
   }
 
+  // Add an effect to check if the product is in the user's wishlist
+  useEffect(() => {
+    const checkWishlistStatus = async () => {
+      if (!user || !product) return
+
+      try {
+        const wishlistItems = await mockWishlistService.getUserWishlist(user.id)
+        const isInWishlist = wishlistItems.some((item) => item.productId.toString() === product.id)
+        setIsWishlisted(isInWishlist)
+      } catch (err) {
+        console.error("Error checking wishlist status:", err)
+      }
+    }
+
+    checkWishlistStatus()
+  }, [user, product])
+
   const handlePayOnline = async () => {
     if (!user) {
-      router.push("/auth?mode=login")
+      router.push("/auth/buyer?mode=login")
       return
     }
 
@@ -287,16 +198,17 @@ export default function ProductDetails() {
 
     try {
       // Show loading state
+      setOrderLoading(true)
       setError(null)
-      const loadingToast = alert("Creating your order...")
 
-      // Get delivery information from user profile
-      const hostelName = user.hostelName || "Prophet Moses"
-      const blockNumber = user.blockNumber || 10
-      const roomNo = user.roomNo || 7
+      toast({
+        title: "Creating your order...",
+        description: "Please wait while we process your request.",
+      })
 
       // Prepare order data
       const orderData = {
+        userId: user.id,
         sellerId: product.sellerId,
         totalPrice: Number.parseFloat(product.price) * quantity,
         orderStatus: "PENDING",
@@ -309,94 +221,120 @@ export default function ProductDetails() {
             price: Number.parseFloat(product.price),
           },
         ],
-        hostelName,
-        blockNumber,
-        roomNo,
-      }
-
-      // Get token
-      const token = localStorage.getItem("token")
-      if (!token) {
-        throw new Error("Authentication token not found")
+        hostelName: user.hostelName || "Prophet Moses",
+        blockNumber: user.blockNumber || 10,
+        roomNo: user.roomNo || 7,
       }
 
       // Create order
-      const response = await fetch("http://localhost:6160/api/v1/orders/create", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(orderData),
+      const orderResponse = await mockOrdersService.createOrder(orderData)
+
+      toast({
+        title: "Order created!",
+        description: "Redirecting to confirmation page...",
       })
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-        throw new Error(errorData.message || "Failed to create order")
-      }
-
-      // Get order details
-      const orderResponse = await response.json()
 
       // Redirect to order confirmation page
       router.push(`/order/${orderResponse.id}/confirm`)
     } catch (err: any) {
       console.error("Error creating order:", err)
       setError(err.message || "Failed to create order. Please try again.")
+      toast({
+        title: "Error",
+        description: err.message || "Failed to create order. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setOrderLoading(false)
     }
   }
 
   const handlePayOnDelivery = async () => {
     if (!user) {
-      router.push("/auth?mode=login")
+      router.push("/auth/buyer?mode=login")
       return
     }
 
     if (!product) return
 
     try {
-      await fetch("http://localhost:6160/api/v1/orders", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          productId: product.id,
-          quantity,
-          paymentMethod: "DELIVERY",
-        }),
+      setOrderLoading(true)
+      setError(null)
+
+      toast({
+        title: "Creating your order...",
+        description: "Please wait while we process your request.",
       })
 
-      alert("Pay on delivery request sent to seller!")
-      // In a real app, this would send a request to the seller
+      // Prepare order data
+      const orderData = {
+        userId: user.id,
+        sellerId: product.sellerId,
+        totalPrice: Number.parseFloat(product.price) * quantity,
+        orderStatus: "PENDING",
+        paymentMethod: "DELIVERY",
+        escrowStatus: "HELD",
+        items: [
+          {
+            productId: product.id,
+            quantity: quantity,
+            price: Number.parseFloat(product.price),
+          },
+        ],
+        hostelName: user.hostelName || "Prophet Moses",
+        blockNumber: user.blockNumber || 10,
+        roomNo: user.roomNo || 7,
+      }
+
+      // Create order
+      const orderResponse = await mockOrdersService.createOrder(orderData)
+
+      toast({
+        title: "Order created!",
+        description: "Redirecting to chat with seller...",
+      })
+
+      // Redirect to chat page for Pay on Delivery
+      router.push(`/chat/${orderResponse.id}`)
     } catch (err: any) {
-      console.error("Error placing order:", err)
-      alert(err.message || "Failed to place order. Please try again.")
+      console.error("Error creating order:", err)
+      setError(err.message || "Failed to create order. Please try again.")
+      toast({
+        title: "Error",
+        description: err.message || "Failed to create order. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setOrderLoading(false)
     }
   }
 
   const handleChatWithSeller = async () => {
     if (!user) {
-      router.push("/auth?mode=login")
+      router.push("/auth/buyer?mode=login")
       return
     }
 
     if (!product) return
 
-    // In a real app, this would open a chat interface with the seller
-    alert(`Chat with ${product.seller.catalogueName} would open here`)
+    toast({
+      title: "Chat initiated",
+      description: `Chat with ${product.seller.catalogueName} would open here.`,
+    })
   }
 
   const handleAddToCart = () => {
     if (!user) {
-      router.push("/auth?mode=login")
+      router.push("/auth/buyer?mode=login")
       return
     }
 
     if (!product) return
 
-    alert(`Added ${quantity} ${product.name} to your cart!`)
-    // In a real app, this would add the product to the cart
+    toast({
+      title: "Added to cart",
+      description: `${quantity} ${product.name} added to your cart!`,
+    })
   }
 
   if (loading) {
@@ -442,7 +380,7 @@ export default function ProductDetails() {
             {/* Thumbnail Gallery */}
             {product.imageUrls.length > 1 && (
               <div className="flex gap-2 mt-4 overflow-x-auto pb-2">
-                {product.imageUrls.map((imageUrl, index) => (
+                {product.imageUrls.map((imageUrl: string, index: number) => (
                   <div
                     key={index}
                     className={`border rounded-md overflow-hidden cursor-pointer transition-all flex-shrink-0 ${
@@ -487,7 +425,7 @@ export default function ProductDetails() {
               </div>
 
               <div className="mb-4">
-                <span className="text-2xl font-bold">${Number.parseFloat(product.price).toFixed(2)}</span>
+                <span className="text-2xl font-bold">₦{Number.parseFloat(product.price).toFixed(2)}</span>
                 {product.stockQuantity > 0 && <span className="ml-2 text-sm text-green-600">In Stock</span>}
               </div>
 
@@ -513,6 +451,13 @@ export default function ProductDetails() {
                   </Button>
                 </Link>
               </div>
+
+              {error && (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md flex items-start mb-4">
+                  <AlertCircle className="h-5 w-5 mr-2 mt-0.5 flex-shrink-0" />
+                  <p>{error}</p>
+                </div>
+              )}
 
               <Separator className="my-4" />
 
@@ -550,44 +495,43 @@ export default function ProductDetails() {
                     <Button
                       onClick={handlePayOnline}
                       className="bg-black text-white py-3 flex items-center justify-center gap-2 hover:bg-gray-800"
+                      disabled={orderLoading}
                     >
-                      <CreditCard className="h-4 w-4" />
-                      Pay Online
+                      {orderLoading ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <CreditCard className="h-4 w-4" />
+                      )}
+                      {orderLoading ? "Processing..." : "Pay Online"}
                     </Button>
                     <Button
                       onClick={handlePayOnDelivery}
                       variant="outline"
                       className="py-3 flex items-center justify-center gap-2 hover:bg-gray-100"
+                      disabled={orderLoading}
                     >
-                      <Truck className="h-4 w-4" />
-                      Pay on Delivery
+                      {orderLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Truck className="h-4 w-4" />}
+                      {orderLoading ? "Processing..." : "Pay on Delivery"}
                     </Button>
                   </div>
 
                   <div className="flex gap-4">
                     <Button
-                      onClick={handleAddToCart}
-                      className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 flex items-center justify-center gap-2"
+                      onClick={toggleWishlist}
+                      className={`flex-1 ${isWishlisted ? "bg-red-600 hover:bg-red-700" : "bg-black hover:bg-gray-800"} text-white py-3 flex items-center justify-center gap-2`}
+                      disabled={orderLoading}
                     >
-                      <ShoppingCart className="h-4 w-4" />
-                      Add to Cart
+                      <Heart className="h-4 w-4" fill={isWishlisted ? "white" : "none"} />
+                      {isWishlisted ? "Remove from Wishlist" : "Add to Wishlist"}
                     </Button>
                     <Button
                       onClick={handleChatWithSeller}
                       variant="ghost"
                       className="flex-1 border border-gray-300 py-3 flex items-center justify-center gap-2 hover:bg-gray-100"
+                      disabled={orderLoading}
                     >
                       <MessageCircle className="h-4 w-4" />
                       Chat with Seller
-                    </Button>
-                    <Button
-                      onClick={toggleWishlist}
-                      variant="ghost"
-                      className={`border py-3 ${
-                        isWishlisted ? "border-red-300 text-red-500" : "border-gray-300 text-gray-700"
-                      }`}
-                    >
-                      <Heart className="h-4 w-4" fill={isWishlisted ? "currentColor" : "none"} />
                     </Button>
                   </div>
                 </>
@@ -713,7 +657,7 @@ export default function ProductDetails() {
                       <p className="text-sm text-gray-500 line-clamp-2">{relatedProduct.description}</p>
                     </div>
                     <div className="mt-2 flex items-center justify-between">
-                      <span className="font-bold">${Number.parseFloat(relatedProduct.price).toFixed(2)}</span>
+                      <span className="font-bold">₦{Number.parseFloat(relatedProduct.price).toFixed(2)}</span>
                     </div>
                   </CardContent>
                   <CardFooter className="p-4 pt-0">

@@ -8,24 +8,28 @@ import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { useAuth } from "@/lib/auth-context"
-import { Store, ArrowLeft, User, Lock, Mail, Building, Home, DoorClosed } from "lucide-react"
+import { ShoppingBag, Store, ArrowLeft, User, Lock, Mail, Phone, Building, CreditCard } from "lucide-react"
+
+// Import the new form error and success components
 import { FormError } from "@/components/form-error"
 import { FormSuccess } from "@/components/form-success"
-import { loginValidation, buyerSignUpValidation } from "@/lib/validation"
 
-export default function SellerAuthPage() {
+export default function AuthPage() {
   const searchParams = useSearchParams()
-  const initialMode = searchParams.get("mode") || "register"
+  const initialMode = searchParams.get("mode") || "login"
+  const initialType = searchParams.get("type") || "buyer"
 
-  const [mode, setMode] = useState(initialMode)
-  const [isLoading, setIsLoading] = useState(false)
+  const [mode, setMode] = useState<string>(initialMode)
+  const [userType, setUserType] = useState<string>(initialType)
+  const [isLoading, setIsLoading] = useState<boolean>(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
-  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
 
   const router = useRouter()
-  const { login, register, user } = useAuth()
+  const { login, register } = useAuth()
 
   // Login form state
   const [loginData, setLoginData] = useState({
@@ -40,81 +44,51 @@ export default function SellerAuthPage() {
     email: "",
     password: "",
     confirmPassword: "",
-    hostelName: "",
-    blockNumber: "",
-    roomNo: "",
+    shippingAddress: "",
+    // Seller specific fields
+    businessName: "",
+    businessDescription: "",
+    phoneNumber: "",
+    bankName: "",
+    accountNumber: "",
   })
 
   useEffect(() => {
-    // Update the URL when mode changes
+    // Update the URL when mode or type changes
     const params = new URLSearchParams()
     params.set("mode", mode)
-    router.replace(`/auth/seller?${params.toString()}`)
-  }, [mode, router])
-
-  // Check if user is already logged in and redirect accordingly
-  useEffect(() => {
-    if (user) {
-      if (user.role === "SELLER") {
-        // If seller registration is not completed, redirect to onboarding
-        if (!user.sellerCompleted) {
-          router.push("/seller/onboarding")
-        } else {
-          // If seller registration is completed, redirect to dashboard
-          router.push("/seller/dashboard")
-        }
-      } else {
-        // If user is not a seller, redirect to account page
-        router.push("/account")
-      }
+    if (mode === "register") {
+      params.set("type", userType)
+    } else {
+      params.delete("type")
     }
-  }, [user, router])
+
+    router.replace(`/auth?${params.toString()}`)
+  }, [mode, userType, router])
 
   const handleLoginChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
     setLoginData((prev) => ({ ...prev, [name]: value }))
-
-    // Clear validation error for this field when user types
-    if (validationErrors[name]) {
-      setValidationErrors((prev) => {
-        const newErrors = { ...prev }
-        delete newErrors[name]
-        return newErrors
-      })
-    }
   }
 
-  const handleRegisterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleRegisterChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
     setRegisterData((prev) => ({ ...prev, [name]: value }))
-
-    // Clear validation error for this field when user types
-    if (validationErrors[name]) {
-      setValidationErrors((prev) => {
-        const newErrors = { ...prev }
-        delete newErrors[name]
-        return newErrors
-      })
-    }
   }
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
-    setValidationErrors({})
-
-    // Validate form
-    const errors = loginValidation(loginData)
-    if (Object.keys(errors).length > 0) {
-      setValidationErrors(errors)
-      return
-    }
-
     setIsLoading(true)
 
     try {
       await login(loginData.email, loginData.password)
-      // Redirect will happen in the useEffect based on user state
+      // Redirect based on user role
+      if (userType === "seller") {
+        router.push("/seller/dashboard")
+      } else {
+        router.push("/account")
+      }
     } catch (err: any) {
       setError(err.message || "Login failed. Please check your credentials.")
     } finally {
@@ -122,40 +96,57 @@ export default function SellerAuthPage() {
     }
   }
 
+  // Update the handleRegisterSubmit function to use CUSTOMER role
   const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
-    setValidationErrors({})
+    setIsLoading(true)
 
-    // Validate form - using buyerSignUpValidation since the forms are now the same
-    const errors = buyerSignUpValidation(registerData)
-    if (Object.keys(errors).length > 0) {
-      setValidationErrors(errors)
+    // Form validation
+    if (registerData.password.length < 6) {
+      setError("Password must be at least 6 characters long")
+      setIsLoading(false)
       return
     }
 
-    setIsLoading(true)
+    // Validate passwords match
+    if (registerData.password !== registerData.confirmPassword) {
+      setError("Passwords do not match")
+      setIsLoading(false)
+      return
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(registerData.email)) {
+      setError("Please enter a valid email address")
+      setIsLoading(false)
+      return
+    }
 
     try {
-      // Register with SELLER role
-      await register({
-        firstName: registerData.firstName,
-        lastName: registerData.lastName,
-        email: registerData.email,
-        password: registerData.password,
-        hostelName: registerData.hostelName,
-        blockNumber: Number.parseInt(registerData.blockNumber),
-        roomNo: Number.parseInt(registerData.roomNo),
-        role: "SELLER", // Register directly as a SELLER
-      })
-
-      // Show success message
-      setSuccess("Registration successful! Redirecting to seller onboarding...")
-
-      // Redirect to seller onboarding after a short delay
-      setTimeout(() => {
+      if (userType === "buyer") {
+        await register({
+          firstName: registerData.firstName,
+          lastName: registerData.lastName,
+          email: registerData.email,
+          password: registerData.password,
+          shippingAddress: registerData.shippingAddress,
+          role: "CUSTOMER", // Changed from BUYER to CUSTOMER
+        })
+        router.push("/account")
+      } else {
+        // For seller registration, redirect to onboarding after registration
+        await register({
+          firstName: registerData.firstName,
+          lastName: registerData.lastName,
+          email: registerData.email,
+          password: registerData.password,
+          shippingAddress: registerData.shippingAddress,
+          role: "SELLER", // This seems to be correct
+        })
         router.push("/seller/onboarding")
-      }, 1500)
+      }
     } catch (err: any) {
       setError(err.message || "Registration failed. Please try again.")
     } finally {
@@ -175,17 +166,27 @@ export default function SellerAuthPage() {
 
           <div className="bg-white rounded-lg shadow-md p-8">
             <div className="flex justify-center mb-6">
-              <div className="w-16 h-16 bg-[#008ECC]/10 rounded-full flex items-center justify-center">
-                {mode === "login" ? (
+              {mode === "login" ? (
+                <div className="w-16 h-16 bg-[#008ECC]/10 rounded-full flex items-center justify-center">
                   <User className="h-8 w-8 text-[#008ECC]" />
-                ) : (
+                </div>
+              ) : userType === "buyer" ? (
+                <div className="w-16 h-16 bg-[#008ECC]/10 rounded-full flex items-center justify-center">
+                  <ShoppingBag className="h-8 w-8 text-[#008ECC]" />
+                </div>
+              ) : (
+                <div className="w-16 h-16 bg-[#008ECC]/10 rounded-full flex items-center justify-center">
                   <Store className="h-8 w-8 text-[#008ECC]" />
-                )}
-              </div>
+                </div>
+              )}
             </div>
 
             <h1 className="text-2xl font-bold mb-6 text-center">
-              {mode === "login" ? "Seller Login" : "Create a Seller Account"}
+              {mode === "login"
+                ? "Welcome Back"
+                : userType === "buyer"
+                  ? "Create a Buyer Account"
+                  : "Create a Seller Account"}
             </h1>
 
             <Tabs defaultValue={mode} onValueChange={setMode} className="w-full">
@@ -210,9 +211,8 @@ export default function SellerAuthPage() {
                       value={loginData.email}
                       onChange={handleLoginChange}
                       required
-                      className={`mt-1 ${validationErrors.email ? "border-red-500" : ""}`}
+                      className="mt-1"
                     />
-                    {validationErrors.email && <p className="text-red-500 text-xs mt-1">{validationErrors.email}</p>}
                   </div>
 
                   <div>
@@ -226,11 +226,8 @@ export default function SellerAuthPage() {
                       value={loginData.password}
                       onChange={handleLoginChange}
                       required
-                      className={`mt-1 ${validationErrors.password ? "border-red-500" : ""}`}
+                      className="mt-1"
                     />
-                    {validationErrors.password && (
-                      <p className="text-red-500 text-xs mt-1">{validationErrors.password}</p>
-                    )}
                   </div>
 
                   <div className="flex items-center justify-between">
@@ -262,7 +259,7 @@ export default function SellerAuthPage() {
                   </Button>
 
                   <div className="mt-4 text-center text-sm text-gray-600">
-                    Don't have a seller account?{" "}
+                    Don't have an account?{" "}
                     <button
                       type="button"
                       onClick={() => setMode("register")}
@@ -271,13 +268,6 @@ export default function SellerAuthPage() {
                       Register
                     </button>
                   </div>
-
-                  <div className="mt-4 text-center text-sm text-gray-600">
-                    Are you a buyer?{" "}
-                    <Link href="/auth/buyer?mode=login" className="text-[#008ECC] hover:underline">
-                      Login as Buyer
-                    </Link>
-                  </div>
                 </form>
               </TabsContent>
 
@@ -285,6 +275,46 @@ export default function SellerAuthPage() {
               <TabsContent value="register">
                 <FormError message={error} />
                 <FormSuccess message={success} />
+
+                <div className="mb-6">
+                  <Label className="block text-sm font-medium mb-2">I want to:</Label>
+                  <RadioGroup value={userType} onValueChange={setUserType} className="flex space-x-4">
+                    <div className="flex-1">
+                      <div
+                        className={`p-3 rounded-lg border-2 flex flex-col items-center gap-2 cursor-pointer transition-colors ${
+                          userType === "buyer"
+                            ? "border-[#008ECC] bg-[#008ECC]/5"
+                            : "border-gray-200 hover:border-gray-300"
+                        }`}
+                        onClick={() => setUserType("buyer")}
+                      >
+                        <ShoppingBag
+                          className={`h-6 w-6 ${userType === "buyer" ? "text-[#008ECC]" : "text-gray-500"}`}
+                        />
+                        <RadioGroupItem value="buyer" id="buyer" className="sr-only" />
+                        <Label htmlFor="buyer" className={userType === "buyer" ? "text-[#008ECC]" : "text-gray-700"}>
+                          Buy Products
+                        </Label>
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      <div
+                        className={`p-3 rounded-lg border-2 flex flex-col items-center gap-2 cursor-pointer transition-colors ${
+                          userType === "seller"
+                            ? "border-[#008ECC] bg-[#008ECC]/5"
+                            : "border-gray-200 hover:border-gray-300"
+                        }`}
+                        onClick={() => setUserType("seller")}
+                      >
+                        <Store className={`h-6 w-6 ${userType === "seller" ? "text-[#008ECC]" : "text-gray-500"}`} />
+                        <RadioGroupItem value="seller" id="seller" className="sr-only" />
+                        <Label htmlFor="seller" className={userType === "seller" ? "text-[#008ECC]" : "text-gray-700"}>
+                          Sell Products
+                        </Label>
+                      </div>
+                    </div>
+                  </RadioGroup>
+                </div>
 
                 <form onSubmit={handleRegisterSubmit} className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
@@ -297,11 +327,8 @@ export default function SellerAuthPage() {
                         value={registerData.firstName}
                         onChange={handleRegisterChange}
                         required
-                        className={`mt-1 ${validationErrors.firstName ? "border-red-500" : ""}`}
+                        className="mt-1"
                       />
-                      {validationErrors.firstName && (
-                        <p className="text-red-500 text-xs mt-1">{validationErrors.firstName}</p>
-                      )}
                     </div>
 
                     <div>
@@ -313,11 +340,8 @@ export default function SellerAuthPage() {
                         value={registerData.lastName}
                         onChange={handleRegisterChange}
                         required
-                        className={`mt-1 ${validationErrors.lastName ? "border-red-500" : ""}`}
+                        className="mt-1"
                       />
-                      {validationErrors.lastName && (
-                        <p className="text-red-500 text-xs mt-1">{validationErrors.lastName}</p>
-                      )}
                     </div>
                   </div>
 
@@ -332,68 +356,8 @@ export default function SellerAuthPage() {
                       value={registerData.email}
                       onChange={handleRegisterChange}
                       required
-                      className={`mt-1 ${validationErrors.email ? "border-red-500" : ""}`}
+                      className="mt-1"
                     />
-                    {validationErrors.email && <p className="text-red-500 text-xs mt-1">{validationErrors.email}</p>}
-                  </div>
-
-                  <div>
-                    <Label htmlFor="hostelName" className="flex items-center gap-2">
-                      <Home className="h-4 w-4" /> Hostel Name
-                    </Label>
-                    <Input
-                      type="text"
-                      id="hostelName"
-                      name="hostelName"
-                      value={registerData.hostelName}
-                      onChange={handleRegisterChange}
-                      required
-                      className={`mt-1 ${validationErrors.hostelName ? "border-red-500" : ""}`}
-                      placeholder="e.g. Prophet Moses"
-                    />
-                    {validationErrors.hostelName && (
-                      <p className="text-red-500 text-xs mt-1">{validationErrors.hostelName}</p>
-                    )}
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="blockNumber" className="flex items-center gap-2">
-                        <Building className="h-4 w-4" /> Block Number
-                      </Label>
-                      <Input
-                        type="number"
-                        id="blockNumber"
-                        name="blockNumber"
-                        value={registerData.blockNumber}
-                        onChange={handleRegisterChange}
-                        required
-                        className={`mt-1 ${validationErrors.blockNumber ? "border-red-500" : ""}`}
-                        placeholder="e.g. 10"
-                      />
-                      {validationErrors.blockNumber && (
-                        <p className="text-red-500 text-xs mt-1">{validationErrors.blockNumber}</p>
-                      )}
-                    </div>
-
-                    <div>
-                      <Label htmlFor="roomNo" className="flex items-center gap-2">
-                        <DoorClosed className="h-4 w-4" /> Room Number
-                      </Label>
-                      <Input
-                        type="number"
-                        id="roomNo"
-                        name="roomNo"
-                        value={registerData.roomNo}
-                        onChange={handleRegisterChange}
-                        required
-                        className={`mt-1 ${validationErrors.roomNo ? "border-red-500" : ""}`}
-                        placeholder="e.g. 7"
-                      />
-                      {validationErrors.roomNo && (
-                        <p className="text-red-500 text-xs mt-1">{validationErrors.roomNo}</p>
-                      )}
-                    </div>
                   </div>
 
                   <div>
@@ -407,11 +371,8 @@ export default function SellerAuthPage() {
                       value={registerData.password}
                       onChange={handleRegisterChange}
                       required
-                      className={`mt-1 ${validationErrors.password ? "border-red-500" : ""}`}
+                      className="mt-1"
                     />
-                    {validationErrors.password && (
-                      <p className="text-red-500 text-xs mt-1">{validationErrors.password}</p>
-                    )}
                   </div>
 
                   <div>
@@ -423,12 +384,88 @@ export default function SellerAuthPage() {
                       value={registerData.confirmPassword}
                       onChange={handleRegisterChange}
                       required
-                      className={`mt-1 ${validationErrors.confirmPassword ? "border-red-500" : ""}`}
+                      className="mt-1"
                     />
-                    {validationErrors.confirmPassword && (
-                      <p className="text-red-500 text-xs mt-1">{validationErrors.confirmPassword}</p>
-                    )}
                   </div>
+
+                  {userType === "buyer" && (
+                    <div>
+                      <Label htmlFor="shippingAddress">Shipping Address</Label>
+                      <Textarea
+                        id="shippingAddress"
+                        name="shippingAddress"
+                        value={registerData.shippingAddress}
+                        onChange={handleRegisterChange}
+                        rows={3}
+                        required
+                        className="mt-1"
+                      />
+                    </div>
+                  )}
+
+                  {userType === "seller" && (
+                    <>
+                      <div>
+                        <Label htmlFor="businessName" className="flex items-center gap-2">
+                          <Building className="h-4 w-4" /> Business Name
+                        </Label>
+                        <Input
+                          type="text"
+                          id="businessName"
+                          name="businessName"
+                          value={registerData.businessName}
+                          onChange={handleRegisterChange}
+                          required
+                          className="mt-1"
+                        />
+                      </div>
+
+                      <div>
+                        <Label htmlFor="phoneNumber" className="flex items-center gap-2">
+                          <Phone className="h-4 w-4" /> Phone Number
+                        </Label>
+                        <Input
+                          type="tel"
+                          id="phoneNumber"
+                          name="phoneNumber"
+                          value={registerData.phoneNumber}
+                          onChange={handleRegisterChange}
+                          required
+                          className="mt-1"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="bankName" className="flex items-center gap-2">
+                            <CreditCard className="h-4 w-4" /> Bank Name
+                          </Label>
+                          <Input
+                            type="text"
+                            id="bankName"
+                            name="bankName"
+                            value={registerData.bankName}
+                            onChange={handleRegisterChange}
+                            required
+                            className="mt-1"
+                          />
+                        </div>
+
+                        <div>
+                          <Label htmlFor="accountNumber">Account Number</Label>
+                          <Input
+                            type="text"
+                            id="accountNumber"
+                            name="accountNumber"
+                            value={registerData.accountNumber}
+                            onChange={handleRegisterChange}
+                            required
+                            className="mt-1"
+                          />
+                        </div>
+                      </div>
+                    </>
+                  )}
 
                   <div className="flex items-center">
                     <input
@@ -455,21 +492,18 @@ export default function SellerAuthPage() {
                     className="w-full bg-[#008ECC] text-white hover:bg-[#007bb3]"
                     disabled={isLoading}
                   >
-                    {isLoading ? "Creating Account..." : "Continue to Onboarding"}
+                    {isLoading
+                      ? "Creating Account..."
+                      : userType === "seller"
+                        ? "Continue to Onboarding"
+                        : "Create Account"}
                   </Button>
 
                   <div className="mt-4 text-center text-sm text-gray-600">
-                    Already have a seller account?{" "}
+                    Already have an account?{" "}
                     <button type="button" onClick={() => setMode("login")} className="text-[#008ECC] hover:underline">
                       Log In
                     </button>
-                  </div>
-
-                  <div className="mt-4 text-center text-sm text-gray-600">
-                    Want to shop on RUNShop?{" "}
-                    <Link href="/auth/buyer?mode=register" className="text-[#008ECC] hover:underline">
-                      Register as Buyer
-                    </Link>
                   </div>
                 </form>
               </TabsContent>

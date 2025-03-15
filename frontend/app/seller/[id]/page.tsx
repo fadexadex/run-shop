@@ -340,7 +340,7 @@ export default function SellerProductsPage() {
                           </button>
                         </div>
                         <div className="mt-2 flex items-center justify-between">
-                          <span className="font-bold text-lg">${Number.parseFloat(product.price).toFixed(2)}</span>
+                          <span className="font-bold text-lg">₦{Number.parseFloat(product.price).toFixed(2)}</span>
                           <span className="text-xs text-gray-500">
                             {product.stockQuantity > 0 ? `${product.stockQuantity} in stock` : "Out of stock"}
                           </span>

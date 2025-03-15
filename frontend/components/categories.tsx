@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { categoriesApi } from "@/lib/api"
 
 interface Category {
   id: string
@@ -16,12 +15,27 @@ export default function Categories() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    const fetchCategories = async () => {
+    const fetchCategoriesWithDelay = async () => {
       try {
         setLoading(true)
-        const response = await categoriesApi.getAll()
-        setCategories(response.data)
-      } catch (err: any) {
+
+        // Import mock data
+        const { categories: mockCategories, products: mockProducts } = await import("@/lib/db")
+
+        // Simulate network delay
+        await new Promise((resolve) => setTimeout(resolve, 1000))
+
+        // Process the mock data to match the expected format
+        const categoriesWithProducts = mockCategories.map((category) => {
+          const categoryProducts = mockProducts.filter((product) => product.category === category.id)
+          return {
+            ...category,
+            products: categoryProducts,
+          }
+        })
+
+        setCategories(categoriesWithProducts)
+      } catch (err) {
         console.error("Error fetching categories:", err)
         setError("Failed to load categories")
       } finally {
@@ -29,7 +43,7 @@ export default function Categories() {
       }
     }
 
-    fetchCategories()
+    fetchCategoriesWithDelay()
   }, [])
 
   if (loading) {

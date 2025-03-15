@@ -8,15 +8,16 @@ import { Trash2, ShoppingCart, Loader2, AlertCircle } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
 
 interface WishlistProduct {
-  id: number
-  dateAdded: string
-  product: {
-    id: number
+  id: string
+  name: string
+  price: string
+  imageUrls: string[]
+  description: string
+  category: {
+    id: string
     name: string
-    price: number
-    image: string
-    category: string
   }
+  seller: string
 }
 
 // Helper function to create a slug from product name
@@ -35,24 +36,36 @@ export default function Wishlist() {
 
   useEffect(() => {
     const fetchWishlist = async () => {
-      if (!user) {
-        setLoading(false)
-        return
-      }
-
       try {
         setLoading(true)
-        const response = await fetch("/api/wishlist")
 
-        if (!response.ok) {
-          throw new Error("Failed to fetch wishlist")
-        }
+        // Simulate network delay
+        await new Promise((resolve) => setTimeout(resolve, 1000))
 
-        const data = await response.json()
-        setWishlistItems(data)
+        // Import mock data
+        const { products } = await import("@/lib/db")
+
+        // Mock wishlist items (products with IDs 1, 3, 5)
+        const wishlistProductIds = [1, 3, 5]
+        const wishlistProducts = products
+          .filter((product) => wishlistProductIds.includes(product.id))
+          .map((product) => ({
+            id: product.id.toString(),
+            name: product.name,
+            price: product.price.toString(),
+            imageUrls: [product.image],
+            description: product.description,
+            category: {
+              id: product.category,
+              name: product.category.charAt(0).toUpperCase() + product.category.slice(1),
+            },
+            seller: product.seller,
+          }))
+
+        setWishlistItems(wishlistProducts)
       } catch (err) {
-        setError("Error loading wishlist. Please try again later.")
         console.error("Error fetching wishlist:", err)
+        setError("Failed to load wishlist")
       } finally {
         setLoading(false)
       }
@@ -61,52 +74,52 @@ export default function Wishlist() {
     fetchWishlist()
   }, [user])
 
-  const removeFromWishlist = async (id: number) => {
+  const removeFromWishlist = async (id: string) => {
     try {
       setWishlistItems(wishlistItems.filter((item) => item.id !== id))
 
-      const response = await fetch(`/api/wishlist/${id}`, {
-        method: "DELETE",
-      })
+      // const response = await fetch(`/api/wishlist/${id}`, {
+      //   method: "DELETE",
+      // })
 
-      if (!response.ok) {
-        // If the API call fails, revert the UI change
-        const data = await response.json()
-        throw new Error(data.error || "Failed to remove item from wishlist")
-      }
+      // if (!response.ok) {
+      //   // If the API call fails, revert the UI change
+      //   const data = await response.json()
+      //   throw new Error(data.error || "Failed to remove item from wishlist")
+      // }
     } catch (err: any) {
       console.error("Error removing from wishlist:", err)
       // Refetch the wishlist to restore the correct state
-      const response = await fetch("/api/wishlist")
-      if (response.ok) {
-        const data = await response.json()
-        setWishlistItems(data)
-      }
+      // const response = await fetch("/api/wishlist")
+      // if (response.ok) {
+      //   const data = await response.json()
+      //   setWishlistItems(data)
+      // }
       alert(err.message || "Failed to remove item from wishlist. Please try again.")
     }
   }
 
   const handleBuyNow = async (productId: number) => {
     try {
-      const response = await fetch("/api/orders", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          productId,
-          quantity: 1,
-          paymentMethod: "online",
-        }),
-      })
+      // const response = await fetch("/api/orders", {
+      //   method: "POST",
+      //   headers: {
+      //     "Content-Type": "application/json",
+      //   },
+      //   body: JSON.stringify({
+      //     productId,
+      //     quantity: 1,
+      //     paymentMethod: "online",
+      //   }),
+      // })
 
-      if (response.ok) {
-        alert("Order placed successfully! Redirecting to payment gateway...")
-        // In a real app, this would redirect to a payment gateway
-      } else {
-        const error = await response.json()
-        alert(`Error: ${error.error || "Failed to place order"}`)
-      }
+      // if (response.ok) {
+      alert("Order placed successfully! Redirecting to payment gateway...")
+      // In a real app, this would redirect to a payment gateway
+      // } else {
+      //   const error = await response.json()
+      //   alert(`Error: ${error.error || "Failed to place order"}`)
+      // }
     } catch (err) {
       console.error("Error placing order:", err)
       alert("Failed to place order. Please try again.")
@@ -160,32 +173,32 @@ export default function Wishlist() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {wishlistItems.map((item) => (
               <Card key={item.id} className="overflow-hidden rounded-lg border hover:shadow-md transition-shadow">
-                <Link href={`/product/${createSlug(item.product.name)}`}>
+                <Link href={`/product/${createSlug(item.name)}`}>
                   <div className="relative overflow-hidden">
                     <img
-                      src={item.product.image || "/placeholder.svg?height=200&width=200"}
-                      alt={item.product.name}
+                      src={item.imageUrls[0] || "/placeholder.svg?height=200&width=200"}
+                      alt={item.name}
                       className="object-cover transition-all hover:scale-105 h-40 w-full"
                     />
                   </div>
                 </Link>
                 <CardContent className="p-4">
                   <div className="space-y-1">
-                    <Link href={`/product/${createSlug(item.product.name)}`} className="hover:underline">
-                      <h3 className="font-semibold">{item.product.name}</h3>
+                    <Link href={`/product/${createSlug(item.name)}`} className="hover:underline">
+                      <h3 className="font-semibold">{item.name}</h3>
                     </Link>
-                    <p className="text-sm">{item.product.category}</p>
-                    <p className="text-xs text-gray-500">Added on {new Date(item.dateAdded).toLocaleDateString()}</p>
+                    <p className="text-sm">{item.category.name}</p>
+                    {/* <p className="text-xs text-gray-500">Added on {new Date(item.dateAdded).toLocaleDateString()}</p> */}
                   </div>
                   <div className="mt-2 flex items-center justify-between">
-                    <span className="font-bold text-[#008ECC]">${item.product.price.toFixed(2)}</span>
+                    <span className="font-bold text-[#008ECC]">${Number.parseFloat(item.price).toFixed(2)}</span>
                   </div>
                 </CardContent>
                 <CardFooter className="p-4 pt-0 flex gap-2">
                   <Button
                     className="flex-1 bg-[#008ECC] hover:bg-[#007bb3] text-white"
                     size="sm"
-                    onClick={() => handleBuyNow(item.product.id)}
+                    onClick={() => handleBuyNow(Number.parseInt(item.id))}
                   >
                     <ShoppingCart className="h-4 w-4 mr-2" />
                     Buy Now

@@ -106,7 +106,7 @@ export default function TrendingProducts() {
                   </button>
                 </div>
                 <div className="mt-2 flex items-center justify-between">
-                  <span className="font-bold">${product.price}</span>
+                  <span className="font-bold">₦{product.price}</span>
                 </div>
               </CardContent>
               <CardFooter className="p-4 pt-0">

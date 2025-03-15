@@ -158,7 +158,7 @@ export default function SearchResults() {
 
               <div className="mb-4">
                 <label className="block text-sm font-medium mb-2">
-                  Price Range: ${filters.priceRange[0]} - ${filters.priceRange[1]}
+                  Price Range: ₦{filters.priceRange[0]} - ₦{filters.priceRange[1]}
                 </label>
                 <Slider
                   defaultValue={[0, 100]}
@@ -225,7 +225,7 @@ export default function SearchResults() {
                         <p className="text-xs text-gray-500">{product.seller}</p>
                       </div>
                       <div className="mt-2 flex items-center justify-between">
-                        <span className="font-bold">${product.price.toFixed(2)}</span>
+                        <span className="font-bold">₦{product.price.toFixed(2)}</span>
                       </div>
                     </CardContent>
                     <CardFooter className="p-4 pt-0">

@@ -98,118 +98,40 @@ export default function SellerDashboard() {
       try {
         setLoading(true)
 
-        // Get token
-        const token = localStorage.getItem("token")
-        if (!token) {
-          throw new Error("Authentication token not found")
-        }
+        // Simulate network delay
+        await new Promise((resolve) => setTimeout(resolve, 1500))
 
-        // Fetch user profile with seller data
-        const userResponse = await fetch("http://localhost:6160/api/v1/auth/me", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+        // Import mock data
+        const { products, orders } = await import("@/lib/db")
+
+        // Mock seller ID
+        const sellerId = 1
+
+        // Filter products by seller
+        const sellerProducts = products.filter((product) => product.seller.id === sellerId)
+
+        // Filter orders for seller's products
+        const sellerOrders = orders.filter((order) => sellerProducts.some((product) => product.id === order.productId))
+
+        // Calculate stats
+        const totalProducts = sellerProducts.length
+        const totalOrders = sellerOrders.length
+        const totalRevenue = sellerOrders.reduce((sum, order) => {
+          const product = sellerProducts.find((p) => p.id === order.productId)
+          return sum + (product ? product.price * order.quantity : 0)
+        }, 0)
+
+        // Set dashboard data
+        setStats({
+          totalProducts,
+          totalOrders,
+          totalRevenue,
         })
-
-        if (!userResponse.ok) {
-          throw new Error("Failed to fetch user profile")
-        }
-
-        const userData = await userResponse.json()
-        console.log("API response from /auth/me:", userData)
-
-        // Check if the response has the expected structure
-        if (!userData.seller) {
-          console.error("Unexpected API response structure:", userData)
-          throw new Error("Seller profile not found")
-        }
-
-        const seller = userData.seller
-        console.log("Seller data extracted:", seller)
-        setSellerProfile(seller)
-
-        // Fetch seller's catalogue
-        const catalogueResponse = await fetch(`http://localhost:6160/api/v1/sellers/${seller.id}/catalogue`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        })
-
-        if (catalogueResponse.ok) {
-          const catalogueData = await catalogueResponse.json()
-          setProducts(catalogueData.products || [])
-
-          // Update stats
-          setStats((prev) => ({
-            ...prev,
-            totalProducts: catalogueData.products?.length || 0,
-          }))
-        } else {
-          console.error("Failed to fetch catalogue")
-          setProducts([])
-        }
-
-        // Try to fetch orders
-        try {
-          // Use the correct endpoint for fetching seller orders
-          const ordersResponse = await fetch(`http://localhost:6160/api/v1/orders/${seller.id}/seller`, {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          })
-
-          if (ordersResponse.ok) {
-            const ordersData = await ordersResponse.json()
-            console.log("Orders data:", ordersData)
-
-            // Check if the response is an array directly or nested in a data property
-            const ordersList = Array.isArray(ordersData) ? ordersData : ordersData.data || []
-
-            // Map the orders to match our expected format
-            const formattedOrders = ordersList.map((order: any) => {
-              return {
-                id: order.id,
-                productId: order.productId || "",
-                quantity: order.quantity || 1,
-                status: order.orderStatus || "PENDING",
-                paymentMethod: order.paymentMethod || "ONLINE",
-                createdAt: order.createdAt,
-                totalPrice: order.totalPrice,
-                escrowStatus: order.escrowStatus,
-                hostelName: order.hostelName,
-                blockNumber: order.blockNumber,
-                roomNo: order.roomNo,
-                // If product details are not included in the order, create a placeholder
-                product: order.product || {
-                  name: "Product",
-                  price: order.totalPrice || "0",
-                  imageUrls: [],
-                },
-              }
-            })
-
-            setOrders(formattedOrders)
-
-            // Calculate total revenue
-            const totalRevenue = ordersList.reduce((sum: number, order: any) => {
-              return sum + Number(order.totalPrice || 0)
-            }, 0)
-
-            setStats((prev) => ({
-              ...prev,
-              totalOrders: ordersList.length,
-              totalRevenue,
-            }))
-          } else {
-            console.error("Failed to fetch orders")
-          }
-        } catch (err) {
-          console.error("Error fetching orders:", err)
-          // If orders endpoint fails, we still have the dashboard with products
-        }
-      } catch (error) {
-        console.error("Error fetching dashboard data:", error)
-        setError(error instanceof Error ? error.message : "Failed to load seller dashboard data")
+        setProducts(sellerProducts)
+        setOrders(sellerOrders)
+      } catch (err) {
+        console.error("Error fetching dashboard data:", err)
+        setError("Failed to load dashboard data")
       } finally {
         setLoading(false)
       }

@@ -59,116 +59,48 @@ export default function CategoryPage() {
   const [sortOption, setSortOption] = useState("featured")
 
   useEffect(() => {
-    // Replace the fetchCategoryAndProducts function with this updated version that includes fallback data
-    const fetchCategoryAndProducts = async () => {
+    // Replace any fetch or API calls with this pattern:
+    const fetchCategoryProducts = async () => {
       try {
         setLoading(true)
 
-        // Attempt to fetch category details
-        const categoryResponse = await fetch(`http://localhost:6160/api/v1/categories/${categoryId}`).catch((err) => {
-          console.error("Network error fetching category:", err)
-          return null
-        })
+        // Simulate network delay
+        await new Promise((resolve) => setTimeout(resolve, 1000))
 
-        // If the fetch failed or returned an error status, use fallback data
-        if (!categoryResponse || !categoryResponse.ok) {
-          console.warn("Using fallback category data due to API error")
+        // Import mock data
+        const { categories, products } = await import("@/lib/db")
 
-          // Check if the categoryId matches our fallback category
-          if (categoryId === "b38346bd-feca-406e-ac43-8bb107f09031") {
-            const fallbackCategory = {
-              id: "b38346bd-feca-406e-ac43-8bb107f09031",
-              name: "Accessories",
-              description: "Find the perfect accessories for your devices and lifestyle",
-            }
+        // Find the category
+        const category = categories.find((c) => c.id === params.categoryId)
 
-            const fallbackProducts = [
-              {
-                id: "3970c0e2-a929-46f6-9c90-72cd7930c185",
-                name: "Anker Soundcore Life Q20",
-                description: "Hybrid Active Noise Cancelling over-ear headphones with Hi-Res audio.",
-                price: "79.99",
-                stockQuantity: 150,
-                imageUrls: ["https://res.cloudinary.com/dwl6lr9vq/image/upload/v1741805573/yrc23llqxj1odwvz0r2h.webp"],
-                sellerId: "c8d1f69f-201e-4cb4-935b-4b5d3da97aeb",
-                seller: {
-                  catalogueName: "Dima Stores",
-                  id: "c8d1f69f-201e-4cb4-935b-4b5d3da97aeb",
-                },
-              },
-              {
-                id: "4970c0e2-a929-46f6-9c90-72cd7930c186",
-                name: "Wireless Earbuds",
-                description: "Bluetooth 5.0 wireless earbuds with noise cancellation.",
-                price: "49.99",
-                stockQuantity: 75,
-                imageUrls: ["/placeholder.svg?height=400&width=300"],
-                sellerId: "c8d1f69f-201e-4cb4-935b-4b5d3da97aeb",
-                seller: {
-                  catalogueName: "Dima Stores",
-                  id: "c8d1f69f-201e-4cb4-935b-4b5d3da97aeb",
-                },
-              },
-              {
-                id: "5970c0e2-a929-46f6-9c90-72cd7930c187",
-                name: "Smartphone Power Bank",
-                description: "20000mAh high capacity power bank with fast charging.",
-                price: "39.99",
-                stockQuantity: 100,
-                imageUrls: ["/placeholder.svg?height=400&width=300"],
-                sellerId: "e8d1f69f-201e-4cb4-935b-4b5d3da97aef",
-                seller: {
-                  catalogueName: "Tech Hub",
-                  id: "e8d1f69f-201e-4cb4-935b-4b5d3da97aef",
-                },
-              },
-              {
-                id: "6970c0e2-a929-46f6-9c90-72cd7930c188",
-                name: "Bluetooth Speaker",
-                description: "Portable waterproof Bluetooth speaker with 24-hour battery life.",
-                price: "59.99",
-                stockQuantity: 50,
-                imageUrls: ["/placeholder.svg?height=400&width=300"],
-                sellerId: "e8d1f69f-201e-4cb4-935b-4b5d3da97aef",
-                seller: {
-                  catalogueName: "Tech Hub",
-                  id: "e8d1f69f-201e-4cb4-935b-4b5d3da97aef",
-                },
-              },
-            ]
-
-            setCategory(fallbackCategory)
-            setProducts(fallbackProducts)
-            setFilteredProducts(fallbackProducts)
-            setLoading(false)
-            return
-          } else {
-            throw new Error("Category not found")
-          }
+        if (!category) {
+          setError("Category not found")
+          return
         }
 
-        const categoryData = await categoryResponse.json()
-        setCategory(categoryData.data)
+        // Filter products by category
+        const categoryProducts = products
+          .filter((product) => product.category === params.categoryId)
+          .map((product) => ({
+            id: product.id.toString(),
+            name: product.name,
+            price: product.price.toString(),
+            imageUrls: [product.image],
+            description: product.description,
+            stockQuantity: Math.floor(Math.random() * 100) + 1,
+            sellerId: product.seller.id.toString(),
+            seller: {
+              id: product.seller.id.toString(),
+              catalogueName: product.seller.name,
+            },
+          }))
 
-        // Fetch products for this category
-        const productsResponse = await fetch(`http://localhost:6160/api/v1/categories/${categoryId}/products`).catch(
-          (err) => {
-            console.error("Network error fetching products:", err)
-            return null
-          },
-        )
-
-        if (!productsResponse || !productsResponse.ok) {
-          throw new Error("Failed to fetch products")
-        }
-
-        const productsData = await productsResponse.json()
-        const fetchedProducts = productsData.data || []
-        setProducts(fetchedProducts)
-        setFilteredProducts(fetchedProducts)
+        setCategory(category)
+        setProducts(categoryProducts)
+        setFilteredProducts(categoryProducts)
       } catch (err) {
-        console.error("Error fetching category and products:", err)
-        setError("Failed to load category and products")
+        console.error("Error fetching category products:", err)
+        setError("Failed to load category products")
       } finally {
         setLoading(false)
       }
@@ -190,9 +122,9 @@ export default function CategoryPage() {
       }
     }
 
-    fetchCategoryAndProducts()
+    fetchCategoryProducts()
     fetchWishlist()
-  }, [categoryId, user])
+  }, [categoryId, user, params.categoryId])
 
   // Apply filters when they change
   useEffect(() => {
@@ -456,7 +388,7 @@ export default function CategoryPage() {
                         </button>
                       </div>
                       <div className="mt-2 flex items-center justify-between">
-                        <span className="font-bold">${Number.parseFloat(product.price).toFixed(2)}</span>
+                        <span className="font-bold">₦{Number.parseFloat(product.price).toFixed(2)}</span>
                         <span className="text-xs text-gray-500">
                           {product.stockQuantity > 0 ? `${product.stockQuantity} in stock` : "Out of stock"}
                         </span>

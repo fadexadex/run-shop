@@ -1,65 +1,106 @@
-export interface Product {
-  id: number
-  name: string
-  price: number
-  image: string
-  category: string
-  description: string
-  features: string[]
-  inStock: boolean
-  seller: Seller
-}
+// Types for the application
 
-export interface Seller {
-  id: number
-  name: string
-  rating: number
-  responseTime: string
+export interface User {
+  id: string
+  email: string
+  firstName: string
+  lastName: string
+  role: "BUYER" | "SELLER" | "ADMIN" | "CUSTOMER"
+  hostelName?: string
+  blockNumber?: number
+  roomNo?: number
+  wishlist?: string[]
+  sellerCompleted?: boolean
+  seller?: Seller
+  shippingAddress?: string
 }
 
 export interface Category {
   id: string
   name: string
-  image: string
   description: string
+  imageUrl?: string
 }
 
-export interface WishlistItem {
-  id: number
-  productId: number
+export interface Seller {
+  id: string
   userId: string
-  dateAdded: string
+  catalogueName: string
+  cataloguePicture?: string
+  paymentMethod: "ONLINE" | "DELIVERY" | "BOTH"
+  createdAt: string
+  updatedAt: string
+  products?: Product[]
 }
 
-export interface User {
+export interface Product {
   id: string
   name: string
-  email: string
+  description: string
+  price: string
+  stockQuantity: number
+  imageUrls: string[]
+  categoryId: string
+  sellerId: string
+  createdAt: string
+  category?: {
+    id: string
+    name: string
+  }
+  seller?: {
+    id: string
+    catalogueName: string
+  }
+}
+
+export interface OrderItem {
+  productId: string
+  quantity: number
+  price: number
 }
 
 export interface Order {
-  id: number
+  id: string
   userId: string
-  productId: number
-  quantity: number
-  status: "pending" | "processing" | "completed" | "cancelled"
-  paymentMethod: "online" | "delivery"
+  sellerId: string
+  items: OrderItem[]
+  totalPrice: number
+  orderStatus: "PENDING" | "PROCESSING" | "COMPLETED" | "CANCELLED"
+  paymentMethod: "ONLINE" | "DELIVERY"
+  escrowStatus: "HELD" | "RELEASED" | "REFUNDED"
+  hostelName: string
+  blockNumber: number
+  roomNo: number
   createdAt: string
+  product?: Product
+}
+
+export interface WishlistItem {
+  id: string
+  userId: string
+  productId: string
+  dateAdded: string
+  product?: Product
+}
+
+export interface PaymentResponse {
+  success: boolean
+  checkoutUrl: string
+  reference: string
 }
 
 export interface Message {
-  id: number
+  id: string
   senderId: string
   receiverId: string
   content: string
   timestamp: string
-  orderId?: number
+  orderId?: string
 }
 
-export interface SearchFilters {
-  category?: string
-  minPrice?: number
-  maxPrice?: number
-  seller?: string
+export interface ChatMessage {
+  id: string
+  orderId: string
+  messages: Message[]
 }
 

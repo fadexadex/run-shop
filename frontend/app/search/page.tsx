@@ -10,91 +10,93 @@ import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Heart, Loader2 } from "lucide-react"
 import { Slider } from "@/components/ui/slider"
 import { useAuth } from "@/lib/auth-context"
-
-interface Product {
-  id: string
-  name: string
-  price: string
-  description: string
-  imageUrls: string[]
-  sellerId: string
-  categoryId: string
-}
-
-// Helper function to create a slug from product name
-const createSlug = (name: string) => {
-  return name
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "")
-}
+import { mockWishlistService, createSlug } from "@/lib/mock-service"
 
 export default function SearchResults() {
   const searchParams = useSearchParams()
   const query = searchParams.get("q") || ""
 
   const [loading, setLoading] = useState(true)
-  const [results, setResults] = useState<Product[]>([])
+  const [results, setResults] = useState<any[]>([])
   const [wishlist, setWishlist] = useState<string[]>([])
   const [error, setError] = useState<string | null>(null)
   const [filters, setFilters] = useState({
     category: "all",
-    priceRange: [0, 100],
+    priceRange: [0, 10000],
     seller: "all",
   })
 
   // Hardcoded categories and sellers for performance
   const categories = ["all", "clothing", "electronics", "food", "accessories"]
-  const sellers = ["all", "Tech Hub", "Campus Threads", "Campus Eats", "Style Hub"]
+  const sellers = ["all", "Jane's Tech Shop", "Campus Threads", "Dima Stores"]
 
   const { user } = useAuth()
 
   useEffect(() => {
     // Fetch wishlist if user is logged in
-    if (user) {
-      // In a real app, this would be an API call
-      setWishlist(["2", "3"])
+    const fetchWishlist = async () => {
+      if (!user) return
+
+      try {
+        const wishlistItems = await mockWishlistService.getUserWishlist(user.id)
+        setWishlist(wishlistItems.map((item) => item.productId))
+      } catch (err) {
+        console.error("Error fetching wishlist:", err)
+      }
     }
+
+    fetchWishlist()
   }, [user])
 
   useEffect(() => {
     const fetchSearchResults = async () => {
       setLoading(true)
       try {
-        // Use the provided search endpoint
-        const response = await fetch(`http://localhost:6160/api/v1/products/search?q=${encodeURIComponent(query)}`)
+        // Simulate network delay
+        await new Promise((resolve) => setTimeout(resolve, 800))
 
-        if (!response.ok) {
-          throw new Error("Failed to fetch search results")
+        // Import mock data
+        const { products } = await import("@/lib/db")
+
+        // Filter products by search query
+        let filteredProducts = products.filter(
+          (product) =>
+            product.name.toLowerCase().includes(query.toLowerCase()) ||
+            product.description.toLowerCase().includes(query.toLowerCase()),
+        )
+
+        // Apply additional filters if provided
+        if (filters.category && filters.category !== "all") {
+          filteredProducts = filteredProducts.filter((product) => product.category === filters.category)
         }
 
-        const data = await response.json()
+        const minPrice = filters.priceRange[0]
+        const maxPrice = filters.priceRange[1]
 
-        // Apply filters (in a real app, these would be sent to the API)
-        let filteredResults = data.data || []
+        filteredProducts = filteredProducts.filter((product) => product.price >= minPrice && product.price <= maxPrice)
 
-        if (filters.category !== "all") {
-          filteredResults = filteredResults.filter((product: Product) =>
-            product.categoryId.toLowerCase().includes(filters.category),
-          )
+        if (filters.seller && filters.seller !== "all") {
+          filteredProducts = filteredProducts.filter((product) => product.seller.name === filters.seller)
         }
 
-        // Apply price filter (assuming price is a string that can be converted to number)
-        filteredResults = filteredResults.filter((product: Product) => {
-          const price = Number.parseFloat(product.price)
-          return price >= filters.priceRange[0] && price <= filters.priceRange[1]
-        })
+        // Format the products
+        const formattedProducts = filteredProducts.map((product) => ({
+          id: product.id.toString(),
+          name: product.name,
+          price: product.price.toString(),
+          imageUrls: [product.image],
+          description: product.description,
+          category: {
+            id: product.category,
+            name: product.category.charAt(0).toUpperCase() + product.category.slice(1),
+          },
+          seller: product.seller,
+        }))
 
-        if (filters.seller !== "all") {
-          filteredResults = filteredResults.filter((product: Product) =>
-            product.sellerId.toLowerCase().includes(filters.seller.toLowerCase()),
-          )
-        }
-
-        setResults(filteredResults)
+        setResults(formattedProducts)
       } catch (err) {
-        console.error("Error fetching search results:", err)
-        setError("Error loading search results. Please try again later.")
+        console.error("Error searching products:", err)
+        setError("Failed to search products")
       } finally {
         setLoading(false)
       }
@@ -120,15 +122,17 @@ export default function SearchResults() {
     setFilters({ ...filters, priceRange: value })
   }
 
-  const toggleWishlist = (productId: string) => {
+  const toggleWishlist = async (productId: string) => {
     if (!user) {
-      window.location.href = "/auth?mode=login"
+      window.location.href = "/auth/buyer?mode=login"
       return
     }
 
     if (wishlist.includes(productId)) {
+      await mockWishlistService.removeFromWishlist(user.id, productId)
       setWishlist(wishlist.filter((id) => id !== productId))
     } else {
+      await mockWishlistService.addToWishlist(user.id, productId)
       setWishlist([...wishlist, productId])
     }
   }
@@ -164,12 +168,12 @@ export default function SearchResults() {
 
               <div className="mb-4">
                 <label className="block text-sm font-medium mb-2">
-                  Price Range: ${filters.priceRange[0]} - ${filters.priceRange[1]}
+                  Price Range: ₦{filters.priceRange[0]} - ₦{filters.priceRange[1]}
                 </label>
                 <Slider
-                  defaultValue={[0, 100]}
-                  max={100}
-                  step={1}
+                  defaultValue={[0, 10000]}
+                  max={10000}
+                  step={100}
                   value={filters.priceRange}
                   onValueChange={handlePriceChange}
                   className="my-4"
@@ -193,7 +197,7 @@ export default function SearchResults() {
                 onClick={() =>
                   setFilters({
                     category: "all",
-                    priceRange: [0, 100],
+                    priceRange: [0, 10000],
                     seller: "all",
                   })
                 }
@@ -239,8 +243,8 @@ export default function SearchResults() {
                           <Link href={`/product/${createSlug(product.name)}`} className="hover:underline">
                             <h3 className="font-semibold">{product.name}</h3>
                           </Link>
-                          <p className="text-sm">Category ID: {product.categoryId}</p>
-                          <p className="text-xs text-gray-500">Seller ID: {product.sellerId}</p>
+                          <p className="text-sm">{product.category.name}</p>
+                          <p className="text-xs text-gray-500">{product.seller.catalogueName}</p>
                         </div>
                         <button
                           onClick={() => toggleWishlist(product.id)}
@@ -251,7 +255,7 @@ export default function SearchResults() {
                         </button>
                       </div>
                       <div className="mt-2 flex items-center justify-between">
-                        <span className="font-bold">${product.price}</span>
+                        <span className="font-bold">₦{Number.parseFloat(product.price).toFixed(2)}</span>
                       </div>
                     </CardContent>
                     <CardFooter className="p-4 pt-0">

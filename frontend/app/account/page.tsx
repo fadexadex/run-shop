@@ -208,21 +208,23 @@ export default function BuyerDashboard() {
                             <div className="flex items-center gap-4">
                               <img
                                 src={
-                                  order.product.imageUrls && order.product.imageUrls.length > 0
+                                  order.product && order.product.imageUrls && order.product.imageUrls.length > 0
                                     ? order.product.imageUrls[0]
                                     : "/placeholder.svg?height=100&width=100"
                                 }
-                                alt={order.product.name}
+                                alt={order.product ? order.product.name : "Product"}
                                 className="w-16 h-16 object-cover rounded"
                               />
                               <div>
-                                <h3 className="font-medium">{order.product.name}</h3>
+                                <h3 className="font-medium">{order.product ? order.product.name : "Product"}</h3>
                                 <p className="text-sm text-gray-500">
                                   Ordered on {new Date(order.createdAt).toLocaleDateString()}
                                 </p>
                                 <p className="text-sm">
                                   Quantity: {order.quantity} · $
-                                  {(Number.parseFloat(order.product.price) * order.quantity).toFixed(2)}
+                                  {order.product
+                                    ? (Number.parseFloat(order.product.price) * order.quantity).toFixed(2)
+                                    : "0.00"}
                                 </p>
                               </div>
                             </div>
@@ -281,21 +283,23 @@ export default function BuyerDashboard() {
                           <div className="flex items-center gap-4">
                             <img
                               src={
-                                order.product.imageUrls && order.product.imageUrls.length > 0
+                                order.product && order.product.imageUrls && order.product.imageUrls.length > 0
                                   ? order.product.imageUrls[0]
                                   : "/placeholder.svg?height=100&width=100"
                               }
-                              alt={order.product.name}
+                              alt={order.product ? order.product.name : "Product"}
                               className="w-16 h-16 object-cover rounded"
                             />
                             <div>
-                              <h3 className="font-medium">{order.product.name}</h3>
+                              <h3 className="font-medium">{order.product ? order.product.name : "Product"}</h3>
                               <p className="text-sm text-gray-500">
                                 Ordered on {new Date(order.createdAt).toLocaleDateString()}
                               </p>
                               <p className="text-sm">
                                 Quantity: {order.quantity} · $
-                                {(Number.parseFloat(order.product.price) * order.quantity).toFixed(2)}
+                                {order.product
+                                  ? (Number.parseFloat(order.product.price) * order.quantity).toFixed(2)
+                                  : "0.00"}
                               </p>
                             </div>
                           </div>
